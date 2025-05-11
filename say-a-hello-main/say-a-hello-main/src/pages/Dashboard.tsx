@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { forwardRef, useImperativeHandle } from 'react'
+
 import {
   Accordion,
   AccordionContent,
@@ -40,7 +42,7 @@ export interface Department {
   employees: Employee[]
 }
 
-const Dashboard = () => {
+const Dashboard = forwardRef((props, ref) => {
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,80 +51,86 @@ const Dashboard = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate] = useState<Date>(today)
+  const fetchData = async () => {
+    try {
+      setLoading(true)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
+      // Fetch departments
+      const departmentsResponse = await fetch(
+        'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
+      )
+      const departmentsData = await departmentsResponse.json()
 
-        // Fetch departments
-        const departmentsResponse = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
-        )
-        const departmentsData = await departmentsResponse.json()
+      // Fetch tasks
+      const tasksResponse = await fetch('http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks')
+      const tasksData = await tasksResponse.json()
 
-        // Fetch tasks
-        const tasksResponse = await fetch('http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks')
-        const tasksData = await tasksResponse.json()
+      // Process data and create department structure
+      const processedDepartments = await Promise.all(
+        departmentsData.map(async (dept: any) => {
+          // Fetch employees for this department
+          const employeesResponse = await fetch(
+            `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
+          )
+          const employeesData = await employeesResponse.json()
 
-        // Process data and create department structure
-        const processedDepartments = await Promise.all(
-          departmentsData.map(async (dept: any) => {
-            // Fetch employees for this department
-            const employeesResponse = await fetch(
-              `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
-            )
-            const employeesData = await employeesResponse.json()
-
-            // Process employees and their tasks
-            const employees = employeesData.map((emp: any) => {
-              // Find tasks assigned to this employee
-              const employeeTasks = tasksData
-                .filter((task: any) => task.assignedToEmployeeId === emp.id)
-                .map((task: any) => ({
-                  id: task.id.toString(),
-                  title: task.title,
-                  description: task.description,
-                  time: formatTime(task.startTime),
-                  endTime: task.endTime ? formatTime(task.endTime) : undefined,
-                  date: new Date(task.startTime),
-                  departmentId: task.departmentId,
-                  assignedToEmployeeId: task.assignedToEmployeeId,
-                  // Add color based on some condition if needed
-                  color: getRandomColor(),
-                }))
-
-              return {
-                id: emp.id.toString(),
-                name: emp.name,
-                position: emp.jobTitle || 'Employee',
-                avatar: emp.imagePath
-                  ? `http://attendance-service.5d-dev.com${emp.imagePath}`
-                  : undefined,
-                department: emp.department,
-                tasks: employeeTasks,
-              }
-            })
+          // Process employees and their tasks
+          const employees = employeesData.map((emp: any) => {
+            // Find tasks assigned to this employee
+            const employeeTasks = tasksData
+              .filter((task: any) => task.assignedToEmployeeId === emp.id)
+              .map((task: any) => ({
+                id: task.id.toString(),
+                title: task.title,
+                description: task.description,
+                time: formatTime(task.startTime),
+                endTime: task.endTime ? formatTime(task.endTime) : undefined,
+                date: new Date(task.startTime),
+                departmentId: task.departmentId,
+                assignedToEmployeeId: task.assignedToEmployeeId,
+                // Add color based on some condition if needed
+                color: getRandomColor(),
+              }))
 
             return {
-              id: dept.id.toString(),
-              name: dept.name,
-              employees: employees,
+              id: emp.id.toString(),
+              name: emp.name,
+              position: emp.jobTitle || 'Employee',
+              avatar: emp.imagePath
+                ? `http://attendance-service.5d-dev.com${emp.imagePath}`
+                : undefined,
+              department: emp.department,
+              tasks: employeeTasks,
             }
-          }),
-        )
+          })
 
-        setDepartments(processedDepartments)
+          return {
+            id: dept.id.toString(),
+            name: dept.name,
+            employees: employees,
+          }
+        }),
+      )
 
-        // Select first department by default
-      } catch (err) {
-        setError('Failed to fetch data from server')
-        console.error('Error fetching data:', err)
-      } finally {
-        setLoading(false)
-      }
+      setDepartments(processedDepartments)
+
+      // Select first department by default
+    } catch (err) {
+      setError('Failed to fetch data from server')
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  // ✅ Expose `refresh` to parent
+  useImperativeHandle(ref, () => ({
+    refresh: () => {
+      fetchData()
+    },
+  }))
+
+  useEffect(() => {
     fetchData()
   }, [])
 
@@ -241,6 +249,6 @@ const Dashboard = () => {
       </div>
     </div>
   )
-}
+})
 
 export default Dashboard

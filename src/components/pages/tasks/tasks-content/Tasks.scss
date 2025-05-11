@@ -16,3 +16,9 @@
 .fc-timegrid-slot {
   height: 1800px !important; /* Increase from default (usually around 40px) */
 }
+.add-task {
+  position: absolute;
+  top: 130px;
+  right: 20px;
+  z-index: 1000;
+}

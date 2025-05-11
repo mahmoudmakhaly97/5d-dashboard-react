@@ -4,7 +4,8 @@ import { Dashboard } from 'react-employee-calendar'
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
-
+import check from '/assets/images/check.png'
+import './Tasks.scss'
 const TasksContent = () => {
   const [modal, setModal] = useState(false)
   const [clients, setClients] = useState([])
@@ -27,10 +28,10 @@ const TasksContent = () => {
     endTime: '',
     createdAt: new Date().toISOString(),
   })
+  const [modalMessage, setModalMessage] = useState(null)
+  const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
 
-  // Then on task creation
-  dashboardRef.current?.refresh()
   const toggle = () => setModal(!modal)
 
   // Fetch data when component mounts
@@ -68,7 +69,6 @@ const TasksContent = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target
 
-    // If department changes, filter employees
     if (name === 'departmentId') {
       const selectedDept = departments.find((dept) => dept.id === Number(value))
       const filtered = selectedDept
@@ -81,21 +81,17 @@ const TasksContent = () => {
         ...prev,
         [name]: value,
         departmentName: selectedDept ? selectedDept.name : '',
-        assignedToEmployeeId: 0, // Reset employee selection when department changes
+        assignedToEmployeeId: 0,
         assignedToEmployeeName: '',
       }))
-    }
-    // If employee selection changes, store both ID and name
-    else if (name === 'assignedToEmployeeId') {
+    } else if (name === 'assignedToEmployeeId') {
       const selectedEmployee = employees.find((emp) => emp.id === Number(value))
       setFormData((prev) => ({
         ...prev,
         assignedToEmployeeId: value,
         assignedToEmployeeName: selectedEmployee ? selectedEmployee.name : '',
       }))
-    }
-    // If created by employee changes, store both ID and name
-    else if (name === 'createdByEmployeeId') {
+    } else if (name === 'createdByEmployeeId') {
       const selectedEmployee = employees.find((emp) => emp.id === Number(value))
       setFormData((prev) => ({
         ...prev,
@@ -113,7 +109,6 @@ const TasksContent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Prepare data for API (only send IDs, not names)
       const apiData = {
         ...formData,
         assignedToEmployeeId: Number(formData.assignedToEmployeeId),
@@ -132,12 +127,36 @@ const TasksContent = () => {
       })
 
       if (response.ok) {
+        setModalMessage('Task created successfully')
+        setModalMessageVisible(true)
         toggle()
+        // Reset form
+        setFormData({
+          title: '',
+          description: '',
+          assignedToEmployeeId: 0,
+          assignedToEmployeeName: '',
+          createdByEmployeeId: 0,
+          createdByEmployeeName: '',
+          updatedByEmployeeId: 0,
+          departmentId: 0,
+          departmentName: '',
+          slotCount: 1,
+          clientId: '',
+          startTime: '',
+          endTime: '',
+          createdAt: new Date().toISOString(),
+        })
+        // Refresh dashboard if needed
+        dashboardRef.current?.refresh()
       } else {
-        console.error('Failed to create task')
+        const errorData = await response.json()
+        setModalMessage('Error creating task: ' + (errorData.message || 'Unknown error'))
+        setModalMessageVisible(true)
       }
     } catch (error) {
-      console.error('Error creating task:', error)
+      setModalMessage('Error creating task: ' + error.message)
+      setModalMessageVisible(true)
     }
   }
 
@@ -157,7 +176,7 @@ const TasksContent = () => {
   return (
     <div>
       <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
-        <Button color="primary" onClick={toggle}>
+        <Button color="primary" onClick={toggle} className="add-task">
           Add New Task
         </Button>
         <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
@@ -332,6 +351,21 @@ const TasksContent = () => {
             </Col>
           </Row>
         </ModalMaker>
+
+        {/* Success/Error Modal */}
+        {modalMessageVisible && (
+          <ModalMaker
+            size="md"
+            modal={modalMessageVisible}
+            toggle={() => setModalMessageVisible(false)}
+            centered
+          >
+            <div className="d-flex flex-column justify-content-center align-items-center gap-3">
+              <img src={check} width={70} height={70} alt="success" />
+              <h1 className="font-bold">{modalMessage}</h1>
+            </div>
+          </ModalMaker>
+        )}
       </div>
       <Dashboard ref={dashboardRef} />
     </div>
