@@ -11,6 +11,7 @@ const TasksContent = () => {
   const [departments, setDepartments] = useState([])
   const [employees, setEmployees] = useState([])
   const [filteredEmployees, setFilteredEmployees] = useState([])
+  const [tasks, setTasks] = useState([]) // Add tasks state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,7 +31,7 @@ const TasksContent = () => {
 
   const toggle = () => setModal(!modal)
 
-  // Fetch data when component mounts
+  // Fetch all necessary data when component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -48,13 +49,18 @@ const TasksContent = () => {
         const departmentsData = await departmentsResponse.json()
         setDepartments(departmentsData)
 
-        // Fetch all employees without pagination
+        // Fetch employees
         const employeesResponse = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetAllEmployees?pageNumber=1&pageSize=1000',
+          'http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?pageNumber=1&pageSize=1000&searchTerm=&departmentId=&isActive=',
         )
         const employeesData = await employeesResponse.json()
-        setEmployees(employeesData.employees)
-        setFilteredEmployees(employeesData.employees)
+        setEmployees(employeesData)
+        setFilteredEmployees(employeesData)
+
+        // Fetch tasks
+        const tasksResponse = await fetch('http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks')
+        const tasksData = await tasksResponse.json()
+        setTasks(tasksData)
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -65,7 +71,6 @@ const TasksContent = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target
 
-    // If department changes, filter employees
     if (name === 'departmentId') {
       const selectedDept = departments.find((dept) => dept.id === Number(value))
       const filtered = selectedDept
@@ -78,21 +83,17 @@ const TasksContent = () => {
         ...prev,
         [name]: value,
         departmentName: selectedDept ? selectedDept.name : '',
-        assignedToEmployeeId: 0, // Reset employee selection when department changes
+        assignedToEmployeeId: 0,
         assignedToEmployeeName: '',
       }))
-    }
-    // If employee selection changes, store both ID and name
-    else if (name === 'assignedToEmployeeId') {
+    } else if (name === 'assignedToEmployeeId') {
       const selectedEmployee = employees.find((emp) => emp.id === Number(value))
       setFormData((prev) => ({
         ...prev,
         assignedToEmployeeId: value,
         assignedToEmployeeName: selectedEmployee ? selectedEmployee.name : '',
       }))
-    }
-    // If created by employee changes, store both ID and name
-    else if (name === 'createdByEmployeeId') {
+    } else if (name === 'createdByEmployeeId') {
       const selectedEmployee = employees.find((emp) => emp.id === Number(value))
       setFormData((prev) => ({
         ...prev,
@@ -110,7 +111,6 @@ const TasksContent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Prepare data for API (only send IDs, not names)
       const apiData = {
         ...formData,
         assignedToEmployeeId: Number(formData.assignedToEmployeeId),
@@ -129,6 +129,26 @@ const TasksContent = () => {
       })
 
       if (response.ok) {
+        const newTask = await response.json()
+        // Update tasks state with the new task
+        setTasks((prevTasks) => [...prevTasks, newTask])
+        // Reset form and close modal
+        setFormData({
+          title: '',
+          description: '',
+          assignedToEmployeeId: 0,
+          assignedToEmployeeName: '',
+          createdByEmployeeId: 0,
+          createdByEmployeeName: '',
+          updatedByEmployeeId: 0,
+          departmentId: 0,
+          departmentName: '',
+          slotCount: 1,
+          clientId: '',
+          startTime: '',
+          endTime: '',
+          createdAt: new Date().toISOString(),
+        })
         toggle()
       } else {
         console.error('Failed to create task')
@@ -138,7 +158,7 @@ const TasksContent = () => {
     }
   }
 
-  // Generate slot options (each slot is 20 minutes)
+  // Generate slot options
   const slotOptions = Array.from({ length: 24 * 3 }, (_, i) => {
     const hours = Math.floor(i / 3)
     const minutes = (i % 3) * 20
@@ -330,7 +350,8 @@ const TasksContent = () => {
           </Row>
         </ModalMaker>
       </div>
-      <Dashboard />
+      {/* Pass tasks to Dashboard component */}
+      <Dashboard tasks={tasks} />
     </div>
   )
 }
