@@ -4,6 +4,8 @@ import { Dashboard } from 'react-employee-calendar'
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
+import { format } from 'date-fns'
+
 import check from '/assets/images/check.png'
 import './Tasks.scss'
 const TasksContent = () => {
@@ -12,6 +14,10 @@ const TasksContent = () => {
   const [departments, setDepartments] = useState([])
   const [employees, setEmployees] = useState([])
   const [filteredEmployees, setFilteredEmployees] = useState([])
+  const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [taskCreated, setTaskCreated] = useState(false)
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -33,39 +39,66 @@ const TasksContent = () => {
   const dashboardRef = useRef()
 
   const toggle = () => setModal(!modal)
+  const fetchData = async () => {
+    try {
+      // Fetch clients
+      const clientsResponse = await fetch(
+        'http://tasks-service.5d-dev.com/api/Clients/GetAllClients',
+      )
+      const clientsData = await clientsResponse.json()
+      setClients(clientsData)
 
+      // Fetch departments
+      const departmentsResponse = await fetch(
+        'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
+      )
+      const departmentsData = await departmentsResponse.json()
+      setDepartments(departmentsData)
+
+      // Fetch all employees without pagination
+      const employeesResponse = await fetch(
+        'http://attendance-service.5d-dev.com/api/Employee/GetAllEmployees?pageNumber=1&pageSize=1000',
+      )
+      const employeesData = await employeesResponse.json()
+      setEmployees(employeesData.employees)
+      setFilteredEmployees(employeesData.employees)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    }
+  }
   // Fetch data when component mounts
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch clients
-        const clientsResponse = await fetch(
-          'http://tasks-service.5d-dev.com/api/Clients/GetAllClients',
-        )
-        const clientsData = await clientsResponse.json()
-        setClients(clientsData)
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Fetches all the data needed for the task creation form. This includes all
+     * clients, departments, and employees. The data is fetched from the tasks and
+     * attendance services.
+     *
+     * @returns {Promise<void>}
+     */
+    /*******  f68bb810-6e8d-451e-a13b-eea84224ecc2  *******/
 
-        // Fetch departments
-        const departmentsResponse = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
-        )
-        const departmentsData = await departmentsResponse.json()
-        setDepartments(departmentsData)
-
-        // Fetch all employees without pagination
-        const employeesResponse = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetAllEmployees?pageNumber=1&pageSize=1000',
-        )
-        const employeesData = await employeesResponse.json()
-        setEmployees(employeesData.employees)
-        setFilteredEmployees(employeesData.employees)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      }
-    }
     fetchData()
   }, [])
+  // Add this useEffect to listen for selection changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (dashboardRef.current) {
+        const currentEmployee = dashboardRef.current.getSelectedEmployee?.()
+        const currentDate = dashboardRef.current.getSelectedDate?.()
 
+        if (currentEmployee && currentEmployee.id !== selectedEmployee?.id) {
+          setSelectedEmployee(currentEmployee)
+        }
+
+        if (currentDate && currentDate !== selectedDate) {
+          setSelectedDate(currentDate)
+        }
+      }
+    }, 500) // Check every 500ms for changes
+
+    return () => clearInterval(interval)
+  }, [selectedEmployee, selectedDate])
   const handleInputChange = (e) => {
     const { name, value } = e.target
 
@@ -105,17 +138,71 @@ const TasksContent = () => {
       }))
     }
   }
+  useEffect(() => {
+    if (selectedEmployee) {
+      setFormData((prev) => ({
+        ...prev,
+        assignedToEmployeeId: Number(selectedEmployee.id),
+        assignedToEmployeeName: selectedEmployee.name,
+        departmentId: selectedEmployee.departmentId || 0,
+        departmentName: selectedEmployee.department || '',
+        startTime: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : '',
+      }))
+    }
+  }, [selectedEmployee, selectedDate])
 
+  // Replace the polling with a more efficient approach
+  // Replace your current useEffect with this more efficient version:
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (dashboardRef.current) {
+        const currentEmployee = dashboardRef.current.getSelectedEmployee?.()
+        const currentDate = dashboardRef.current.getSelectedDate?.()
+
+        if (currentEmployee && currentEmployee.id) {
+          setSelectedEmployee(currentEmployee) // Always set - force re-render
+        }
+
+        if (currentDate) {
+          setSelectedDate(currentDate)
+        }
+      }
+    }
+
+    // Add event listeners if your Dashboard component emits events
+    // Or use a more immediate polling mechanism
+    const interval = setInterval(handleSelectionChange, 100) // Faster polling
+
+    return () => clearInterval(interval)
+  }, [selectedEmployee, selectedDate])
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      const getValidISODate = (timeStr, date = selectedDate) => {
+        if (!timeStr || !date) return null
+        const datePart = format(new Date(date), 'yyyy-MM-dd') // Get the date part
+        const dateTimeString = `${datePart}T${timeStr}`
+
+        // Convert to UTC
+        const parsed = new Date(dateTimeString + 'Z') // 'Z' ensures it's UTC
+        console.log('Parsed Date:', parsed) // Debugging
+        return isNaN(parsed) ? null : parsed.toISOString()
+      }
+
+      const start = formData.startTime || selectedDate
+      const end = formData.endTime || selectedDate
+
       const apiData = {
-        ...formData,
-        assignedToEmployeeId: Number(formData.assignedToEmployeeId),
+        title: formData.title,
+        description: formData.description,
+        assignedToEmployeeId: Number(formData.assignedToEmployeeId || selectedEmployee?.id),
         createdByEmployeeId: Number(formData.createdByEmployeeId),
-        departmentId: Number(formData.departmentId),
+        updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
+        departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
         slotCount: Number(formData.slotCount),
-        clientId: Number(formData.clientId),
+        startTime: getValidISODate(formData.startTime),
+        endTime: getValidISODate(formData.endTime),
+        createdAt: new Date().toISOString(),
       }
 
       const response = await fetch('http://tasks-service.5d-dev.com/api/Tasks/CreateTask', {
@@ -130,6 +217,16 @@ const TasksContent = () => {
         setModalMessage('Task created successfully')
         setModalMessageVisible(true)
         toggle()
+
+        setTaskCreated(true)
+        // Call the Dashboard's refresh method
+        if (dashboardRef.current) {
+          dashboardRef.current.refresh()
+        }
+
+        // Optionally, fetch updated task list here
+        await fetchData() // Ensure this re-fetches the task list and updates state
+
         // Reset form
         setFormData({
           title: '',
@@ -147,8 +244,6 @@ const TasksContent = () => {
           endTime: '',
           createdAt: new Date().toISOString(),
         })
-        // Refresh dashboard if needed
-        dashboardRef.current?.refresh()
       } else {
         const errorData = await response.json()
         setModalMessage('Error creating task: ' + (errorData.message || 'Unknown error'))
@@ -172,202 +267,224 @@ const TasksContent = () => {
       </option>
     )
   })
+  useEffect(() => {
+    if (selectedEmployee) {
+      console.log('Selected employee:', selectedEmployee)
+    }
+  }, [selectedEmployee])
 
+  useEffect(() => {
+    if (selectedDate) {
+      console.log('Selected date:', selectedDate)
+    }
+  }, [selectedDate])
+  useEffect(() => {
+    if (dashboardRef.current) {
+      console.log('Dashboard methods:', dashboardRef.current)
+    }
+  }, [])
+  useEffect(() => {
+    if (taskCreated) {
+      fetchData() // Re-fetch the data after task creation
+      setTaskCreated(false) // Reset the flag after fetching data
+    }
+  }, [taskCreated])
   return (
-    <div>
-      <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
-        <Button color="primary" onClick={toggle} className="add-task">
-          Add New Task
-        </Button>
-        <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
-          <Row>
-            <Col md={12}>
-              <h1 className="my-4">Create New Task</h1>
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="title">Title</Label>
-                      <Input
-                        type="text"
-                        id="title"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </FormGroup>
-                  </Col>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="clientId">Client</Label>
-                      <Input
-                        type="select"
-                        id="clientId"
-                        name="clientId"
-                        value={formData.clientId}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select a client</option>
-                        {clients.map((client) => (
-                          <option key={client.id} value={client.id}>
-                            {client.name} (Code: {client.clientCode})
-                          </option>
-                        ))}
-                      </Input>
-                    </FormGroup>
-                  </Col>
-                </Row>
+    <div className="tasks-container">
+      {/* Button should only appear when an employee is selected */}
+      {selectedEmployee?.id && selectedEmployee?.name && (
+        <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+          <Button color="primary" onClick={toggle} className="add-task">
+            Add Task for {selectedEmployee.name}
+          </Button>
+        </div>
+      )}
+      <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
+        <Row>
+          <Col md={12}>
+            <h1 className="my-4">Create New Task</h1>
+            <Form onSubmit={handleSubmit}>
+              <Row>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="title">Title</Label>
+                    <Input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="clientId">Client</Label>
+                    <Input
+                      type="select"
+                      id="clientId"
+                      name="clientId"
+                      value={formData.clientId}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select a client</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name} (Code: {client.clientCode})
+                        </option>
+                      ))}
+                    </Input>
+                  </FormGroup>
+                </Col>
+              </Row>
 
-                <Row className="my-3">
-                  <Col>
-                    <FormGroup>
-                      <Label for="description">Description</Label>
-                      <Input
-                        type="textarea"
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                      />
-                    </FormGroup>
-                  </Col>
-                </Row>
+              <Row className="my-3">
+                <Col>
+                  <FormGroup>
+                    <Label for="description">Description</Label>
+                    <Input
+                      type="textarea"
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
 
-                <Row>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="startTime">Start Time</Label>
-                      <Input
-                        type="datetime-local"
-                        id="startTime"
-                        name="startTime"
-                        value={formData.startTime}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </FormGroup>
-                  </Col>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="endTime">End Time</Label>
-                      <Input
-                        type="datetime-local"
-                        id="endTime"
-                        name="endTime"
-                        value={formData.endTime}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </FormGroup>
-                  </Col>
-                </Row>
+              <Row>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="startTime">Start Time</Label>
+                    <Input
+                      type="time"
+                      id="startTime"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="slotCount">Duration</Label>
+                    <Input
+                      type="select"
+                      id="slotCount"
+                      name="slotCount"
+                      value={formData.slotCount}
+                      onChange={handleInputChange}
+                    >
+                      {slotOptions}
+                    </Input>
+                  </FormGroup>
+                </Col>
+                <Col md={6} className="d-none">
+                  <FormGroup>
+                    <Label for="endTime">End Time</Label>
+                    <Input
+                      type="datetime-local"
+                      id="endTime"
+                      name="endTime"
+                      value={formData.endTime}
+                      onChange={handleInputChange}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
 
-                <Row className="my-3">
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="slotCount">Duration</Label>
-                      <Input
-                        type="select"
-                        id="slotCount"
-                        name="slotCount"
-                        value={formData.slotCount}
-                        onChange={handleInputChange}
-                      >
-                        {slotOptions}
-                      </Input>
-                    </FormGroup>
-                  </Col>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="departmentId">Department</Label>
-                      <Input
-                        type="select"
-                        id="departmentId"
-                        name="departmentId"
-                        value={formData.departmentId}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select a department</option>
-                        {departments.map((dept) => (
-                          <option key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </option>
-                        ))}
-                      </Input>
-                    </FormGroup>
-                  </Col>
-                </Row>
+              <Row className="my-3">
+                <Col md={6} className="d-none">
+                  <FormGroup>
+                    <Label for="departmentId">Department</Label>
+                    <Input
+                      type="select"
+                      id="departmentId"
+                      name="departmentId"
+                      value={formData.departmentId}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select a department</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </Input>
+                  </FormGroup>
+                </Col>
+              </Row>
 
-                <Row className="my-3">
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="assignedToEmployeeId">Assigned To</Label>
-                      <Input
-                        type="select"
-                        id="assignedToEmployeeId"
-                        name="assignedToEmployeeId"
-                        value={formData.assignedToEmployeeId}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select an employee</option>
-                        {filteredEmployees.map((emp) => (
-                          <option key={emp.id} value={emp.id}>
-                            {emp.name} ({emp.department})
-                          </option>
-                        ))}
-                      </Input>
-                    </FormGroup>
-                  </Col>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label for="createdByEmployeeId">Created By</Label>
-                      <Input
-                        type="select"
-                        id="createdByEmployeeId"
-                        name="createdByEmployeeId"
-                        value={formData.createdByEmployeeId}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select an employee</option>
-                        {employees.map((emp) => (
-                          <option key={emp.id} value={emp.id}>
-                            {emp.name} ({emp.department})
-                          </option>
-                        ))}
-                      </Input>
-                    </FormGroup>
-                  </Col>
-                </Row>
+              <Row className="my-3 d-none">
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="assignedToEmployeeId">Assigned To</Label>
+                    <Input
+                      type="select"
+                      id="assignedToEmployeeId"
+                      name="assignedToEmployeeId"
+                      value={formData.assignedToEmployeeId}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select an employee</option>
+                      {filteredEmployees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name} ({emp.department})
+                        </option>
+                      ))}
+                    </Input>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="createdByEmployeeId">Created By</Label>
+                    <Input
+                      type="select"
+                      id="createdByEmployeeId"
+                      name="createdByEmployeeId"
+                      value={formData.createdByEmployeeId}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select an employee</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name} ({emp.department})
+                        </option>
+                      ))}
+                    </Input>
+                  </FormGroup>
+                </Col>
+              </Row>
 
-                <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
-                  Create Task
-                </Button>
-              </Form>
-            </Col>
-          </Row>
+              <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
+                Create Task
+              </Button>
+            </Form>
+          </Col>
+        </Row>
+      </ModalMaker>
+
+      {/* Success/Error Modal */}
+      {modalMessageVisible && (
+        <ModalMaker
+          size="md"
+          modal={modalMessageVisible}
+          toggle={() => setModalMessageVisible(false)}
+          centered
+        >
+          <div className="d-flex flex-column justify-content-center align-items-center gap-3">
+            <img src={check} width={70} height={70} alt="success" />
+            <h1 className="font-bold">{modalMessage}</h1>
+          </div>
         </ModalMaker>
-
-        {/* Success/Error Modal */}
-        {modalMessageVisible && (
-          <ModalMaker
-            size="md"
-            modal={modalMessageVisible}
-            toggle={() => setModalMessageVisible(false)}
-            centered
-          >
-            <div className="d-flex flex-column justify-content-center align-items-center gap-3">
-              <img src={check} width={70} height={70} alt="success" />
-              <h1 className="font-bold">{modalMessage}</h1>
-            </div>
-          </ModalMaker>
-        )}
+      )}
+      <div className="dashboard-container">
+        <Dashboard ref={dashboardRef} />
       </div>
-      <Dashboard ref={dashboardRef} />
     </div>
   )
 }

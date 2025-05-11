@@ -50,7 +50,8 @@ const Dashboard = forwardRef((props, ref) => {
 
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const [currentDate] = useState<Date>(today)
+  const [currentDate, setCurrentDate] = useState(today)
+
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -78,7 +79,7 @@ const Dashboard = forwardRef((props, ref) => {
           const employees = employeesData.map((emp: any) => {
             // Find tasks assigned to this employee
             const employeeTasks = tasksData
-              .filter((task: any) => task.assignedToEmployeeId === emp.id)
+              .filter((task: any) => task.assignedToEmployeeId?.toString() === emp.id.toString())
               .map((task: any) => ({
                 id: task.id.toString(),
                 title: task.title,
@@ -123,11 +124,13 @@ const Dashboard = forwardRef((props, ref) => {
     }
   }
 
-  // ✅ Expose `refresh` to parent
   useImperativeHandle(ref, () => ({
     refresh: () => {
       fetchData()
     },
+    getSelectedEmployee: () => selectedEmployee,
+    getSelectedDate: () => currentDate,
+    setSelectedDate: (date: Date) => setCurrentDate(date),
   }))
 
   useEffect(() => {
@@ -144,6 +147,8 @@ const Dashboard = forwardRef((props, ref) => {
       hour12: true,
     })
   }
+  // Replace your current useEffect with this more efficient version:
+
   // Helper function to generate random color for tasks
   const getRandomColor = (): 'red' | 'green' | 'blue' => {
     const colors: ('red' | 'green' | 'blue')[] = ['red', 'green', 'blue']
@@ -151,9 +156,11 @@ const Dashboard = forwardRef((props, ref) => {
   }
 
   // Handle employee selection with department
+  // In Dashboard's handleEmployeeSelect
   const handleEmployeeSelect = (department: Department, employee: Employee | null) => {
     setSelectedDepartment(department)
     setSelectedEmployee(employee)
+    window.dispatchEvent(new CustomEvent('employeeSelected'))
   }
 
   if (loading) {
@@ -237,13 +244,12 @@ const Dashboard = forwardRef((props, ref) => {
           </div>
 
           {/* Task Timeline */}
-          <div className="flex-1 overflow-hidden">
-            <TaskTimeline
-              department={selectedDepartment}
-              employee={selectedEmployee}
-              currentDate={currentDate}
-            />
-          </div>
+          <TaskTimeline
+            department={selectedDepartment}
+            employee={selectedEmployee}
+            currentDate={currentDate}
+            onDateSelect={(date) => setCurrentDate(date)}
+          />
         </div>
       </div>
     </div>

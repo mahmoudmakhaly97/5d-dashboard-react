@@ -10,9 +10,24 @@ interface TaskTimelineProps {
   department: Department | null
   employee: Employee | null
   currentDate: Date
+  onDateSelect?: (date: Date) => void
 }
 
-const TaskTimeline: React.FC<TaskTimelineProps> = ({ department, employee, currentDate }) => {
+const TaskTimeline: React.FC<TaskTimelineProps> = ({
+  department,
+  employee,
+  currentDate,
+  onDateSelect,
+}) => {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date)
+    if (onDateSelect) {
+      onDateSelect(date)
+    }
+  }
+
   // Get the date range - today only or full week based on selection
   const getDateRange = () => {
     if (!department) return [currentDate]
@@ -91,7 +106,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({ department, employee, curre
   }
 
   return (
-    <div className="relative w-full h-full overflow-auto p-4">
+    <div className="relative w-full h-full   p-4">
       <div className="flex mb-4 justify-between items-center">
         <h2 className="text-xl font-semibold">{getTitle()}</h2>
         <div className="text-sm text-muted-foreground">
@@ -133,9 +148,12 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({ department, employee, curre
               {dateRange.map((date, index) => (
                 <div
                   key={index}
-                  className={`flex-1 p-2 text-center font-medium ${
-                    isToday(date) ? 'bg-primary/10 rounded-t-md' : ''
+                  className={`flex-1 p-2 text-center font-medium cursor-pointer ${
+                    (selectedDate ? isSameDay(selectedDate, date) : isToday(date))
+                      ? 'bg-primary/10 rounded-t-md'
+                      : ''
                   }`}
+                  onClick={() => handleDayClick(date)}
                 >
                   {format(date, 'EEE, MMM d')}
                 </div>

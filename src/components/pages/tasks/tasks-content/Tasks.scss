@@ -22,3 +22,21 @@
   right: 20px;
   z-index: 1000;
 }
+.tasks-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem;
+  background: white;
+  z-index: 10; /* Ensure it stays above dashboard */
+}
+
+.dashboard-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
