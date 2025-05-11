@@ -257,13 +257,24 @@ const TasksContent = () => {
 
   // Generate slot options (each slot is 20 minutes)
   const slotOptions = Array.from({ length: 24 * 3 }, (_, i) => {
-    const hours = Math.floor(i / 3)
-    const minutes = (i % 3) * 20
+    const totalMinutes = (i + 1) * 20 // Each slot is 20 minutes
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    // Format display text
+    let displayText = ''
+    if (hours > 0 && minutes > 0) {
+      displayText = `${hours}h ${minutes}m`
+    } else if (hours > 0) {
+      displayText = `${hours}h`
+    } else {
+      displayText = `${minutes}m`
+    }
+
     const slotCount = i + 1
-    const displayText = `${slotCount} slot${slotCount > 1 ? 's' : ''} (${hours}h ${minutes}m)`
     return (
       <option key={slotCount} value={slotCount}>
-        {displayText}
+        {`${slotCount} slot${slotCount > 1 ? 's' : ''} (${displayText})`}
       </option>
     )
   })
@@ -371,18 +382,25 @@ const TasksContent = () => {
                 </Col>
                 <Col md={6}>
                   <FormGroup>
-                    <Label for="slotCount">Duration</Label>
+                    <Label for="slotCount">Duration </Label>
                     <Input
-                      type="select"
+                      type="number"
                       id="slotCount"
                       name="slotCount"
+                      min="1"
                       value={formData.slotCount}
                       onChange={handleInputChange}
-                    >
-                      {slotOptions}
-                    </Input>
+                      required
+                    />
+                    <small className="text-muted">
+                      Total time:{' '}
+                      {formData.slotCount * 20 >= 60
+                        ? `${Math.floor((formData.slotCount * 20) / 60)}h ${(formData.slotCount * 20) % 60}m`
+                        : `${formData.slotCount * 20}m`}
+                    </small>
                   </FormGroup>
                 </Col>
+
                 <Col md={6} className="d-none">
                   <FormGroup>
                     <Label for="endTime">End Time</Label>
@@ -397,7 +415,7 @@ const TasksContent = () => {
                 </Col>
               </Row>
 
-              <Row className="my-3">
+              <Row>
                 <Col md={6} className="d-none">
                   <FormGroup>
                     <Label for="departmentId">Department</Label>
