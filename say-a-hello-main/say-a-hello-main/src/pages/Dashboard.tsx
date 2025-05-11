@@ -73,9 +73,7 @@ const Dashboard = () => {
               `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
             )
             const employeesData = await employeesResponse.json()
-            console.log('====================================')
-            console.log('employeesData', employeesData)
-            console.log('====================================')
+
             // Process employees and their tasks
             const employees = employeesData.map((emp: any) => {
               // Find tasks assigned to this employee
