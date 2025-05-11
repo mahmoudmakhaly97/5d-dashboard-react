@@ -1,0 +1,81 @@
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.reports {
+  min-height: 100vh;
+  .accordion {
+    .accordion-item {
+      overflow: hidden;
+      .accordion-header {
+        font-weight: 600;
+        span {
+          &:first-of-type {
+            color: #222;
+          }
+          &:last-of-type {
+            color: #6b7280;
+          }
+        }
+      }
+      .accordion-button {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #fff;
+
+        &:focus {
+          box-shadow: none;
+        }
+        &:not(.collapsed) {
+          background-color: transparent;
+          border-bottom: 1px solid #dbdfe6;
+          padding-top: 15px;
+          padding-bottom: 15px;
+        }
+      }
+    }
+  }
+  .p-button {
+    background-color: #cb904d;
+    border: 0;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+  }
+  .btn-primary {
+    background-color: #721996 !important;
+    border-color: #721996 !important;
+  }
+  .p-inputtext:focus,
+  .p-calendar:not(.p-calendar-disabled).p-focus > .p-inputtext {
+    box-shadow: none;
+    border-color: #d1d5db;
+  }
+
+  table {
+    tbody {
+      tr {
+        height: 80px;
+      }
+    }
+  }
+}
+.p-datepicker:not(.p-datepicker-inline) {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.3);
+}
+.p-datepicker table td.p-datepicker-today > span {
+  background-color: transparent !important;
+}
+
+.p-datepicker table td > span.p-highlight {
+  background-color: #721996 !important;
+  border-radius: 0;
+  color: #fff;
+  border-radius: 5px;
+}
+.p-multiselect-panel {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.3);
+}

@@ -1,0 +1,88 @@
+// style.scss
+
+@use '@coreui/coreui/scss/coreui' as *;
+
+@use '@coreui/chartjs/scss/coreui-chartjs';
+@use 'vendors/simplebar';
+
+@import url('https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap');
+
+body {
+  background-color: var(--cui-tertiary-bg);
+  overflow-x: hidden !important;
+  font-family: ' Mona Sans', sans-serif;
+}
+
+a {
+  text-decoration: none !important;
+}
+
+.pointer {
+  cursor: pointer;
+}
+.wrapper {
+  width: 100%;
+  padding-inline: var(--cui-sidebar-occupy-start, 0) var(--cui-sidebar-occupy-end, 0);
+  will-change: auto;
+  @include transition(padding 0.15s);
+}
+
+.header > .container-fluid,
+.sidebar-header {
+  min-height: calc(4rem + 10px); // stylelint-disable-line function-disallowed-list
+}
+
+.sidebar-brand-full {
+  margin-left: 3px;
+}
+
+.sidebar-header {
+  .nav-underline-border {
+    --cui-nav-underline-border-link-padding-x: 1rem;
+    --cui-nav-underline-border-gap: 0;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
+  }
+}
+
+.sidebar-toggler {
+  margin-inline-start: auto;
+}
+
+.sidebar-narrow,
+.sidebar-narrow-unfoldable:not(:hover) {
+  .sidebar-toggler {
+    margin-inline-end: auto;
+  }
+}
+
+.header > .container-fluid + .container-fluid {
+  min-height: 3rem;
+}
+
+.footer {
+  min-height: calc(3rem + 1px); // stylelint-disable-line function-disallowed-list
+}
+
+@include color-mode(dark) {
+  body {
+    background-color: var(--cui-dark-bg-subtle);
+  }
+
+  .footer {
+    --cui-footer-bg: var(--cui-body-bg);
+  }
+}
+.sidebar-nav .nav-link {
+}
+.sidebar-nav .nav-link.active {
+  font-weight: 700;
+  color: #721996 !important;
+}
+.p-tabview-nav {
+  margin-bottom: 0 !important;
+}

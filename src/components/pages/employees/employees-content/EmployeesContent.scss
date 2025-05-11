@@ -1,0 +1,159 @@
+.employees {
+  min-height: 85vh;
+  .pointer {
+    cursor: pointer;
+  }
+  .title {
+    h4 {
+      color: #110f49;
+    }
+    p {
+      font-size: 15px;
+    }
+  }
+  thead {
+    height: 50px;
+    th {
+      font-size: 14px;
+      color: rgb(37 43 54 / 68%);
+      font-weight: 600;
+    }
+  }
+
+  tbody {
+    td {
+      color: rgb(37 43 54 / 68%);
+      font-weight: 500;
+      font-size: 15px;
+      height: 70px;
+
+      .employee-name {
+        color: #110f49 !important;
+        font-weight: 600;
+      }
+      .email,
+      .department {
+        color: #0c1713 !important;
+      }
+      .avatar-img {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  }
+  .badge {
+    background-color: #e3fbf3 !important;
+    color: #198754;
+  }
+  .p-multiselect-label {
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+
+  p-multiselect-items {
+    padding-left: 0 !important;
+    .p-multiselect-item {
+      padding: 0.35rem 1.25rem !important;
+    }
+  }
+  .form-control {
+    width: 200px;
+    border-left: 0;
+    padding-inline-start: 0;
+    padding: 8px 0;
+    &::placeholder {
+      font-size: 15px;
+    }
+    &:focus {
+      box-shadow: none !important;
+      border-color: #dbdfe6 !important;
+    }
+  }
+  .input-group-text {
+    background-color: #ffff !important;
+  }
+}
+.btn-primary {
+  background-color: #721996 !important;
+  border-color: #721996 !important;
+}
+.form-switch .form-check-input {
+  padding: 10px !important;
+  width: 2.5rem !important;
+}
+.form-check-input {
+  &:checked {
+    background-color: #cb904d;
+    border: #cb904d;
+  }
+  &:focus {
+    box-shadow: none;
+  }
+}
+.modal-content {
+  border-radius: 16px;
+  form {
+    .form-label {
+      color: #a0a0a0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    input,
+    select {
+    }
+  }
+}
+ul,
+ol {
+  padding-left: 0 !important;
+}
+.add-employee {
+  input,
+  .form-select {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+  .back-btn {
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 0;
+    &:hover {
+      color: #fff;
+    }
+  }
+}
+.employee-details-modal {
+  img {
+    width: 100px;
+    height: 100px;
+  }
+  .text-primary {
+    color: #721996 !important;
+  }
+  .title {
+    color: #6b7280;
+    font-weight: 500;
+  }
+  .edit {
+    position: relative !important;
+    bottom: 34px;
+    color: rgb(37 43 54 / 68%);
+  }
+  .text-dark {
+    color: #0c1713 !important;
+  }
+}
+.p-multiselect.p-component.p-inputwrapper.p-multiselect-chip {
+  border: 1px solid #dbdfe6 !important;
+}
+input.p-inputtext.p-component {
+  border: 1px solid #dbdfe6 !important;
+  padding-inline-start: 9px;
+}
+input.p-inputtext.p-component {
+  padding: 6px;
+}
+.p-checkbox-input {
+  opacity: 1;
+  border: 1px solid #dbdfe6 !important;
+  overflow: hidden;
+}

@@ -1,0 +1,16 @@
+.login {
+  .login-btn {
+    background-color: #721996;
+    color: #fff;
+    transition: 0.3s all ease;
+    &:hover {
+      background-color: rgba(114, 26, 149, 0.6);
+      color: #fff;
+    }
+  }
+  .form-check-input {
+    &:checked {
+      background-color: #721a95;
+    }
+  }
+}

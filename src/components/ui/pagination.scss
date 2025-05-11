@@ -1,0 +1,29 @@
+.page-item {
+  a {
+    color: rgba(37, 43, 54, 0.68);
+  }
+  .page-link {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    border: 0;
+    &:focus {
+      box-shadow: none;
+    }
+  }
+  &:first-child,
+  &:last-child {
+    .page-link {
+      width: 100px;
+      background-color: transparent;
+    }
+  }
+  &.active {
+    .page-link {
+      background-color: #721996 !important;
+    }
+  }
+}

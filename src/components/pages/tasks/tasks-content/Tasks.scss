@@ -1,0 +1,18 @@
+/* Makes the red "now" line span the full width */
+.fc-timegrid-now-indicator-line {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  border-top-width: 2px !important;
+  border-top-style: solid !important;
+  border-top-color: red !important;
+  z-index: 1000 !important;
+}
+
+/* Removes the arrow at the top (optional) */
+.fc-timegrid-now-indicator-arrow {
+  display: none !important;
+}
+.fc-timegrid-slot {
+  height: 1800px !important; /* Increase from default (usually around 40px) */
+}
