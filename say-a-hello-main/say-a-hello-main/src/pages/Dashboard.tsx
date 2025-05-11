@@ -144,7 +144,6 @@ const Dashboard = forwardRef((props, ref) => {
       hour12: true,
     })
   }
-
   // Helper function to generate random color for tasks
   const getRandomColor = (): 'red' | 'green' | 'blue' => {
     const colors: ('red' | 'green' | 'blue')[] = ['red', 'green', 'blue']

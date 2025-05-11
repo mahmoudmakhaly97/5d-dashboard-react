@@ -181,7 +181,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({ department, employee, curre
                           const isPM = task.time.toLowerCase().includes('pm')
 
                           const hourIn24 = isPM && hour !== 12 ? hour + 12 : hour
-                          const topPosition = (hourIn24 - 10) * 169 + minute
+                          const topPosition = (hourIn24 - 10) * 96 + minute
 
                           // Calculate height based on duration
                           let heightInMinutes = 60 // Default 1 hour
@@ -233,36 +233,49 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({ department, employee, curre
                     function getTimePosition(timeString: string): number {
                       if (!timeString) return 0
                       const hourHeight = 96 // height of 1 hour
-                      const startHour = 10 // calendar starts at 8 AM
+                      const startHour = 10 // calendar starts at 10 AM
 
+                      // Split into time and modifier (AM/PM)
                       const [time, modifier] = timeString.trim().split(' ')
-                      const [rawHour, rawMinute] = time.split(':')
-                      let hour = parseInt(rawHour)
-                      const minute = parseInt(rawMinute)
+                      const [hoursStr, minutesStr] = time.split(':')
 
-                      if (modifier.toLowerCase() === 'pm' && hour !== 12) hour += 12
-                      if (modifier.toLowerCase() === 'am' && hour === 12) hour = 0
+                      let hours = parseInt(hoursStr)
+                      const minutes = parseInt(minutesStr || '0')
 
-                      const totalMinutes = hour * 60 + minute
-                      const startMinutes = startHour * 60
+                      // Convert to 24-hour format
+                      if (modifier) {
+                        if (modifier.toLowerCase() === 'pm' && hours !== 12) {
+                          hours += 12
+                        } else if (modifier.toLowerCase() === 'am' && hours === 12) {
+                          hours = 0
+                        }
+                      }
 
-                      const minutesFromStart = totalMinutes - startMinutes
-                      const pixelsPerMinute = hourHeight / 60 // 96px per 60 minutes
+                      // Calculate total minutes from start of day (10 AM)
+                      const totalMinutes = hours * 60 + minutes - startHour * 60
+                      const pixelsPerMinute = hourHeight / 60
 
-                      return minutesFromStart * pixelsPerMinute
+                      return Math.max(0, totalMinutes * pixelsPerMinute)
                     }
-
                     function getMinutes(timeString: string): number {
                       if (!timeString) return 0
+
                       const [time, modifier] = timeString.trim().split(' ')
-                      const [rawHour, rawMinute] = time.split(':')
-                      let hour = parseInt(rawHour)
-                      const minute = parseInt(rawMinute)
+                      const [hoursStr, minutesStr] = time.split(':')
 
-                      if (modifier.toLowerCase() === 'pm' && hour !== 12) hour += 12
-                      if (modifier.toLowerCase() === 'am' && hour === 12) hour = 0
+                      let hours = parseInt(hoursStr)
+                      const minutes = parseInt(minutesStr || '0')
 
-                      return hour * 60 + minute
+                      // Convert to 24-hour format
+                      if (modifier) {
+                        if (modifier.toLowerCase() === 'pm' && hours !== 12) {
+                          hours += 12
+                        } else if (modifier.toLowerCase() === 'am' && hours === 12) {
+                          hours = 0
+                        }
+                      }
+
+                      return hours * 60 + minutes
                     }
 
                     // Group tasks by employee first
