@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import TaskCard from './TaskCard'
 import { Trash2 } from 'lucide-react'
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 
 interface TaskTimelineProps {
   department: Department | null
@@ -25,6 +26,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [Tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false);
+const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,47 +43,57 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       onDateSelect(date)
     }
   }
-  const handleDeleteTask = async (taskId: string) => {
-    const isConfirmed = window.confirm('Are you sure you want to delete this task?')
-    if (!isConfirmed) return
+  const handleDeleteTask = (taskId: string) => {
+  setTaskToDelete(taskId); // Set the task ID to be deleted
+  setModalOpen(true); // Open the confirmation modal
+};
 
-    setIsLoading(true)
-    setError(null)
+const handleConfirmDelete = async () => {
+  if (!taskToDelete) return;
+  
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      const response = await fetch(
-        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-          },
-          body: JSON.stringify(taskId),
+  try {
+    const response = await fetch(
+      `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
-      )
+        body: JSON.stringify(taskToDelete),
+      },
+    );
 
-      if (!response.ok) {
-        throw new Error('Failed to delete task')
-      }
-
-      // Optimistic update
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
-
-      // Then verify with server
-      await fetchData()
-
-      // Hard refresh after successful task deletion
-      window.location.reload()
-    } catch (err) {
-      setError(err.message)
-      console.error('Delete error:', err)
-      // Revert optimistic update if needed
-      fetchData()
-    } finally {
-      setIsLoading(false)
+    if (!response.ok) {
+      throw new Error('Failed to delete task');
     }
+
+    // Optimistic update
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskToDelete));
+
+    // Then verify with server
+    await fetchData();
+
+    // Hard refresh after successful task deletion
+    window.location.reload();
+  } catch (err) {
+    setError(err.message);
+    console.error('Delete error:', err);
+    // Revert optimistic update if needed
+    fetchData();
+  } finally {
+    setIsLoading(false);
+    setModalOpen(false); // Close the modal after deletion
   }
+};
+
+const handleCancelDelete = () => {
+  setModalOpen(false); // Close the modal without deleting
+  setTaskToDelete(null);
+};
 
   const fetchData = async () => {
     try {
@@ -540,6 +554,21 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           </p>
         </div>
       )}
+       {/* Task Deletion Modal */}
+      <Modal isOpen={modalOpen} toggle={handleCancelDelete}>
+        <ModalHeader toggle={handleCancelDelete}>Confirm Task Deletion</ModalHeader>
+        <ModalBody>
+          Are you sure you want to delete this task? This action cannot be undone.
+        </ModalBody>
+        <ModalFooter>
+          <Button color="secondary" onClick={handleCancelDelete}>
+            Cancel
+          </Button>
+          <Button color="danger" onClick={handleConfirmDelete} disabled={isLoading}>
+            {isLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }
