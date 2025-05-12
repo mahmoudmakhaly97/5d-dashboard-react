@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import TaskCard from './TaskCard'
-import { Trash2 } from 'lucide-react'
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap'
 import * as Dialog from '@radix-ui/react-dialog'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
+import { Trash2 } from 'lucide-react'
 
 interface TaskTimelineProps {
   department: Department | null
@@ -312,7 +312,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                           return (
                             <div
                               key={taskIndex}
-                              className="absolute mx-1 group" // <-- Added `group` here
+                              className="absolute mx-1 group TaskCard" // <-- Added `group` here
                               style={{
                                 top: `${topPosition}px`,
                                 left: '4px',
@@ -334,8 +334,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                               />
                               <Trash2
                                 size={19}
-                                className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={() => handleDeleteClick(task)}
+
                                 // ...........No
                               />
                             </div>
@@ -500,7 +501,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       return (
                         <div
                           key={index}
-                          className="absolute mx-1 group"
+                          className="absolute mx-1 group TaskCard"
                           style={{
                             top: `${top}px`,
                             left: `${left}%`,

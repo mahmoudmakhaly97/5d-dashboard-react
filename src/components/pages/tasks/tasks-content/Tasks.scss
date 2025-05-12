@@ -83,3 +83,23 @@
     color: white;
   }
 }
+.tasks-container {
+  svg {
+    opacity: 1 !important;
+  }
+}
+.group {
+  svg {
+    &:first-of-type {
+      opacity: 0 !important;
+      top: 20px !important;
+    }
+  }
+  &:hover {
+    svg {
+      &:first-of-type {
+        opacity: 1 !important;
+      }
+    }
+  }
+}
