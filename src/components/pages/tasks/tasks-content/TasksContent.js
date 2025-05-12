@@ -304,7 +304,9 @@ const TasksContent = () => {
       })
     } catch (error) {
       console.error('Error submitting task:', error)
-      setTooltipMessage('Oops! Something went wrong while creating the task. Please try again.')
+      setTooltipMessage(
+        'Oops! This time slot overlaps with an existing task. Please choose a different time. ',
+      )
       setTooltipOpen(true)
       setTimeout(() => setTooltipOpen(false), 4000)
     }

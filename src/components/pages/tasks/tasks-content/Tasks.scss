@@ -94,11 +94,18 @@
       opacity: 0 !important;
       top: 20px !important;
     }
+    &:last-of-type {
+      opacity: 0 !important;
+      top: 4rem !important;
+    }
   }
   &:hover {
     svg {
       &:first-of-type {
         opacity: 1 !important;
+      }
+      &:last-of-type {
+        opacity: 0.5 !important;
       }
     }
   }

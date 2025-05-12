@@ -43,8 +43,8 @@ export interface Department {
   name: string
   employees: Employee[]
 }
-
 const Dashboard = forwardRef((props, ref) => {
+  const { onEditTask } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -253,6 +253,7 @@ const Dashboard = forwardRef((props, ref) => {
             employee={selectedEmployee}
             currentDate={currentDate}
             onDateSelect={(date) => setCurrentDate(date)}
+            onEditTask={onEditTask}
           />
         </div>
       </div>

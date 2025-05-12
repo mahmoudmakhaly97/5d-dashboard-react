@@ -8,13 +8,14 @@ import TaskCard from './TaskCard'
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap'
 import * as Dialog from '@radix-ui/react-dialog'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 
 interface TaskTimelineProps {
   department: Department | null
   employee: Employee | null
   currentDate: Date
   onDateSelect?: (date: Date) => void
+  onEditTask: (task: Task) => void
 }
 
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
@@ -22,6 +23,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   employee,
   currentDate,
   onDateSelect,
+  onEditTask,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date()) // Add this state
@@ -339,6 +341,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
                                 // ...........No
                               />
+                              <Pencil
+                                size={19}
+                                className="absolute  top-10 right-3  cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={() => onEditTask(task.id)}
+                              />
                             </div>
                           )
                         })}
@@ -528,6 +535,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                             size={19}
                             className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                             onClick={() => handleDeleteClick(task)}
+                          />
+                          <Pencil
+                            size={19}
+                            className="absolute   right-3   top-10 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={() => onEditTask(task.id)}
                           />
                         </div>
                       )
