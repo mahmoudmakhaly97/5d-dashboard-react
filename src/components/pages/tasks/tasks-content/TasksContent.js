@@ -21,6 +21,8 @@ const TasksContent = () => {
   const [tooltipOpen, setTooltipOpen] = useState(false)
   const [tooltipMessage, setTooltipMessage] = useState('')
   const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
+  const [editModal, setEditModal] = useState(false)
+  const [taskToEdit, setTaskToEdit] = useState(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -353,6 +355,158 @@ const TasksContent = () => {
       setTaskCreated(false) // Reset the flag after fetching data
     }
   }, [taskCreated])
+  const handleEditTask = async (taskId) => {
+    console.log('Attempting to fetch task with ID:', taskId, typeof taskId)
+
+    try {
+      // Show loading state
+      setModalMessage('Loading task details...')
+      setModalMessageVisible(true)
+
+      // Fetch the task details
+      const response = await fetch(
+        `http://tasks-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.message || `Failed to fetch task details (Status: ${response.status})`,
+        )
+      }
+
+      const taskData = await response.json()
+
+      // Close loading modal
+      setModalMessageVisible(false)
+
+      // Set the task data in the form
+      setTaskToEdit(taskData)
+
+      // Convert dates to local format for the form
+      const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
+      const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
+
+      setFormData({
+        title: taskData.title || '',
+        description: taskData.description || '',
+        assignedToEmployeeId: taskData.assignedToEmployeeId || 0,
+        assignedToEmployeeName: taskData.assignedToEmployeeName || '',
+        createdByEmployeeId: taskData.createdByEmployeeId || 0,
+        createdByEmployeeName: taskData.createdByEmployeeName || '',
+        updatedByEmployeeId: taskData.updatedByEmployeeId || 0,
+        departmentId: taskData.departmentId || 0,
+        departmentName: taskData.departmentName || '',
+        slotCount: taskData.slotCount || 1,
+        clientId: taskData.clientId || '',
+        startTime: startTime,
+        endTime: endTime,
+        createdAt: taskData.createdAt || new Date().toISOString(),
+      })
+
+      // Open the edit modal
+      setEditModal(true)
+    } catch (error) {
+      console.error('Error fetching task details:', error)
+      setModalMessage(`Error loading task details: ${error.message}`)
+      setModalMessageVisible(true)
+      setEditModal(false)
+    }
+  }
+
+  const handleUpdateTask = async (e) => {
+    e.preventDefault()
+
+    if (!taskToEdit) return
+
+    try {
+      const getValidISODate = (timeStr, date = selectedDate) => {
+        if (!timeStr || !date) return null
+        const datePart = format(new Date(date), 'yyyy-MM-dd')
+        const dateTimeString = `${datePart}T${timeStr}`
+        const parsed = new Date(dateTimeString + 'Z')
+        return isNaN(parsed) ? null : parsed.toISOString()
+      }
+
+      const apiData = {
+        id: taskToEdit.id,
+        title: formData.title,
+        description: formData.description,
+        assignedToEmployeeId: Number(formData.assignedToEmployeeId || selectedEmployee?.id),
+        createdByEmployeeId: Number(formData.createdByEmployeeId),
+        updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
+        departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
+        slotCount: Number(formData.slotCount),
+        startTime: getValidISODate(formData.startTime),
+        endTime: getValidISODate(formData.endTime),
+        createdAt: formData.createdAt,
+      }
+
+      const response = await fetch('http://tasks-service.5d-dev.com/api/Tasks/UpdateTask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      })
+
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        if (
+          responseData.message?.includes('Time slot conflict') ||
+          responseData.error?.includes('Time slot conflict') ||
+          responseData.message?.includes('overlaps') ||
+          responseData.error?.includes('overlaps')
+        ) {
+          setTooltipMessage(
+            'Oops! This time slot overlaps with an existing task. Please choose a different time.',
+          )
+          setTooltipOpen(true)
+          setTimeout(() => setTooltipOpen(false), 4000)
+        } else {
+          console.error('Unhandled task update error:', responseData)
+          setModalMessage('Error updating task. Please try again.')
+          setModalMessageVisible(true)
+        }
+        return
+      }
+
+      // Success case
+      setModalMessage('Task updated successfully')
+      setModalMessageVisible(true)
+      setEditModal(false)
+      setTaskToEdit(null)
+
+      if (dashboardRef.current) {
+        dashboardRef.current.refresh()
+      }
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        assignedToEmployeeId: 0,
+        assignedToEmployeeName: '',
+        createdByEmployeeId: 0,
+        createdByEmployeeName: '',
+        updatedByEmployeeId: 0,
+        departmentId: 0,
+        departmentName: '',
+        slotCount: 1,
+        clientId: '',
+        startTime: '',
+        endTime: '',
+        createdAt: new Date().toISOString(),
+      })
+    } catch (error) {
+      console.error('Error updating task:', error)
+      setTooltipMessage('Oops! Something went wrong while updating the task. Please try again.')
+      setTooltipOpen(true)
+      setTimeout(() => setTooltipOpen(false), 4000)
+    }
+  }
+
   return (
     <div className="tasks-container">
       {/* Button should only appear when an employee is selected */}
@@ -456,7 +610,9 @@ const TasksContent = () => {
                     <small className="text-muted">
                       Total time:{' '}
                       {formData.slotCount * 20 >= 60
-                        ? `${Math.floor((formData.slotCount * 20) / 60)}h ${(formData.slotCount * 20) % 60}m`
+                        ? `${Math.floor((formData.slotCount * 20) / 60)}h ${
+                            (formData.slotCount * 20) % 60
+                          }m`
                         : `${formData.slotCount * 20}m`}
                     </small>
                   </FormGroup>
@@ -585,8 +741,128 @@ const TasksContent = () => {
           </div>
         </div>
       </ModalMaker>
+      {/* Edit Task Modal */}
+      <ModalMaker modal={editModal} toggle={() => setEditModal(false)} centered size={'lg'}>
+        <Row>
+          <Col md={12}>
+            <h1 className="my-4">Edit Task</h1>
+            <Form onSubmit={handleUpdateTask}>
+              <Row>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="title">Title</Label>
+                    <Input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="clientId">Client</Label>
+                    <Input
+                      type="select"
+                      id="clientId"
+                      name="clientId"
+                      value={formData.clientId}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select a client</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name} (Code: {client.clientCode})
+                        </option>
+                      ))}
+                    </Input>
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <Row className="my-3">
+                <Col>
+                  <FormGroup>
+                    <Label for="description">Description</Label>
+                    <Input
+                      type="textarea"
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="startTime">Start Time</Label>
+                    <Input
+                      type="time"
+                      id="startTime"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="slotCount">Duration</Label>
+                    <Input
+                      type="number"
+                      id="slotCount"
+                      name="slotCount"
+                      min="1"
+                      value={formData.slotCount}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <Tooltip
+                      placement="top"
+                      isOpen={tooltipOpen}
+                      target="slotCount"
+                      popperClassName="tooltip-style"
+                    >
+                      <p className="text-danger fw-bold">{tooltipMessage}</p>
+                    </Tooltip>
+                    <small className="text-muted">
+                      Total time:{' '}
+                      {formData.slotCount * 20 >= 60
+                        ? `${Math.floor((formData.slotCount * 20) / 60)}h ${
+                            (formData.slotCount * 20) % 60
+                          }m`
+                        : `${formData.slotCount * 20}m`}
+                    </small>
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <div>
+                <Button
+                  id="updateTaskBtn"
+                  color="primary"
+                  type="submit"
+                  className="px-3 w-100 py-2 mt-4"
+                >
+                  Update Task
+                </Button>
+              </div>
+            </Form>
+          </Col>
+        </Row>
+      </ModalMaker>
       <div className="dashboard-container">
-        <Dashboard ref={dashboardRef} />
+        <Dashboard
+          ref={dashboardRef}
+          onEditTask={handleEditTask} // Add this line
+        />
       </div>
     </div>
   )
