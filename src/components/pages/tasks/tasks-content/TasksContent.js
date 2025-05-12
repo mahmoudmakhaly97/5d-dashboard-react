@@ -23,6 +23,7 @@ const TasksContent = () => {
   const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
   const [editModal, setEditModal] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -93,6 +94,7 @@ const TasksContent = () => {
         setModalMessageVisible(true)
         setTaskToDelete(null)
         toggleDeleteModal()
+        setRefreshKey((prev) => prev + 1) // This will force a re-render
 
         // Refresh the dashboard
         if (dashboardRef.current) {
@@ -280,6 +282,7 @@ const TasksContent = () => {
       setModalMessageVisible(true)
       toggle()
       setTaskCreated(true)
+      window.location.reload()
 
       if (dashboardRef.current) {
         dashboardRef.current.refresh()
@@ -358,8 +361,6 @@ const TasksContent = () => {
     }
   }, [taskCreated])
   const handleEditTask = async (taskId) => {
-    console.log('Attempting to fetch task with ID:', taskId, typeof taskId)
-
     try {
       // Show loading state
       setModalMessage('Loading task details...')
@@ -475,6 +476,7 @@ const TasksContent = () => {
       }
 
       // Success case
+      window.location.reload()
       setModalMessage('Task updated successfully')
       setModalMessageVisible(true)
       setEditModal(false)
@@ -864,6 +866,7 @@ const TasksContent = () => {
         <Dashboard
           ref={dashboardRef}
           onEditTask={handleEditTask} // Add this line
+          key={refreshKey} // This will force a fresh mount when changed
         />
       </div>
     </div>
