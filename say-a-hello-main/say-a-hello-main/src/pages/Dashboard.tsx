@@ -135,23 +135,6 @@ const Dashboard = forwardRef((props, ref) => {
     getSelectedEmployee: () => selectedEmployee,
     getSelectedDate: () => currentDate,
     setSelectedDate: (date: Date) => setCurrentDate(date),
-    // Add this method to get the task card with delete button
-    getTaskCard: (task: any, employee: any) => (
-      <div className="task-card-container">
-        <TaskCard task={task} employee={employee} />
-        <button
-          className="task-delete-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            setTaskToDelete(task)
-            toggleDeleteModal()
-          }}
-        >
-          <Trash2 size={16} />
-          <p className="text-danger"> dcdcdcd</p>
-        </button>
-      </div>
-    ),
   }))
 
   useEffect(() => {

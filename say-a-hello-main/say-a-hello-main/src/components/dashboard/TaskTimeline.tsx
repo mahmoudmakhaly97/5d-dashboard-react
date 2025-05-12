@@ -6,7 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import TaskCard from './TaskCard'
 import { Trash2 } from 'lucide-react'
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap'
+import * as Dialog from '@radix-ui/react-dialog'
+import ConfirmDeleteModal from './ConfirmDeleteModal'
 
 interface TaskTimelineProps {
   department: Department | null
@@ -26,9 +28,10 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [Tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [modalOpen, setModalOpen] = useState(false);
-const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
-
+  const [modalOpen, setModalOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedTaskToDelete, setSelectedTaskToDelete] = useState<Task | null>(null)
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,57 +46,45 @@ const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
       onDateSelect(date)
     }
   }
-  const handleDeleteTask = (taskId: string) => {
-  setTaskToDelete(taskId); // Set the task ID to be deleted
-  setModalOpen(true); // Open the confirmation modal
-};
-
-const handleConfirmDelete = async () => {
-  if (!taskToDelete) return;
-  
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const response = await fetch(
-      `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        body: JSON.stringify(taskToDelete),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to delete task');
-    }
-
-    // Optimistic update
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskToDelete));
-
-    // Then verify with server
-    await fetchData();
-
-    // Hard refresh after successful task deletion
-    window.location.reload();
-  } catch (err) {
-    setError(err.message);
-    console.error('Delete error:', err);
-    // Revert optimistic update if needed
-    fetchData();
-  } finally {
-    setIsLoading(false);
-    setModalOpen(false); // Close the modal after deletion
+  const handleDeleteClick = (task: Task) => {
+    setSelectedTaskToDelete(task)
+    setShowDeleteModal(true)
   }
-};
 
-const handleCancelDelete = () => {
-  setModalOpen(false); // Close the modal without deleting
-  setTaskToDelete(null);
-};
+  const confirmDelete = async () => {
+    if (!selectedTaskToDelete) return
+    const taskId = selectedTaskToDelete.id
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify(taskId),
+        },
+      )
+
+      if (!response.ok) throw new Error('Failed to delete task')
+
+      // Optional: close the modal before refresh
+      setShowDeleteModal(false)
+
+      // Hard refresh the page
+      window.location.reload()
+    } catch (err) {
+      setError((err as Error).message)
+      console.error('Delete error:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -344,7 +335,7 @@ const handleCancelDelete = () => {
                               <Trash2
                                 size={19}
                                 className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={() => handleDeleteTask(task.id)}
+                                onClick={() => handleDeleteClick(task)}
                                 // ...........No
                               />
                             </div>
@@ -535,7 +526,7 @@ const handleCancelDelete = () => {
                           <Trash2
                             size={19}
                             className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={() => handleDeleteTask(task.id)}
+                            onClick={() => handleDeleteClick(task)}
                           />
                         </div>
                       )
@@ -554,21 +545,14 @@ const handleCancelDelete = () => {
           </p>
         </div>
       )}
-       {/* Task Deletion Modal */}
-      <Modal isOpen={modalOpen} toggle={handleCancelDelete}>
-        <ModalHeader toggle={handleCancelDelete}>Confirm Task Deletion</ModalHeader>
-        <ModalBody>
-          Are you sure you want to delete this task? This action cannot be undone.
-        </ModalBody>
-        <ModalFooter>
-          <Button color="secondary" onClick={handleCancelDelete}>
-            Cancel
-          </Button>
-          <Button color="danger" onClick={handleConfirmDelete} disabled={isLoading}>
-            {isLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </ModalFooter>
-      </Modal>
+      {selectedTaskToDelete && (
+        <ConfirmDeleteModal
+          open={showDeleteModal}
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteModal(false)}
+          taskName={selectedTaskToDelete.title}
+        />
+      )}
     </div>
   )
 }
