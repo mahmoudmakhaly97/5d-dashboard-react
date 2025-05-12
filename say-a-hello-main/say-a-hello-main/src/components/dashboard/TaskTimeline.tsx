@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Department, Employee, Task } from '@/pages/Dashboard'
 import Stopwatch from '@/components/dashboard/Stopwatch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import TaskCard from './TaskCard'
+import { Trash2 } from 'lucide-react'
 
 interface TaskTimelineProps {
   department: Department | null
@@ -20,13 +21,83 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   onDateSelect,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date()) // Add this state
+  const [Tasks, setTasks] = useState<Task[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
 
+    return () => clearInterval(interval)
+  }, [])
   const handleDayClick = (date: Date) => {
     setSelectedDate(date)
     if (onDateSelect) {
       onDateSelect(date)
     }
   }
+  const handleDeleteTask = async (taskId: string) => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this task?')
+    if (!isConfirmed) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify(taskId),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task')
+      }
+
+      // Optimistic update
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+
+      // Then verify with server
+      await fetchData()
+
+      // Hard refresh after successful task deletion
+      window.location.reload()
+    } catch (err) {
+      setError(err.message)
+      console.error('Delete error:', err)
+      // Revert optimistic update if needed
+      fetchData()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch(
+        'http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks?' +
+          new URLSearchParams({
+            timestamp: Date.now().toString(),
+          }),
+      )
+      const data = await response.json()
+      setTasks(data)
+    } catch (err) {
+      console.error('Error fetching tasks:', err)
+    }
+  }
+  useEffect(() => {
+    fetchData()
+  }, []) // Empty array means this runs only once when the component mounts
 
   // Get the date range - today only or full week based on selection
   const getDateRange = () => {
@@ -104,9 +175,24 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     }
     return `${department.name} - Today's Tasks`
   }
+  // Calculate stopwatch position
+  const calculateStopwatchPosition = () => {
+    const startHour = 10 // Calendar starts at 10 AM
+    const hourHeight = 96 // Each hour is 96px tall
+    const currentHour = currentTime.getHours()
+    const currentMinute = currentTime.getMinutes()
+
+    // Calculate total minutes from start of day (10 AM)
+    const totalMinutes = currentHour * 60 + currentMinute - startHour * 60
+    const pixelsPerMinute = hourHeight / 60
+
+    return Math.max(0, totalMinutes * pixelsPerMinute)
+  }
+
+  const stopwatchPosition = calculateStopwatchPosition()
 
   return (
-    <div className="relative w-full h-full   p-4">
+    <div className="relative w-full  p-4 overflow-auto" style={{ minHeight: '100vh' }}>
       <div className="flex mb-4 justify-between items-center">
         <h2 className="text-xl font-semibold">{getTitle()}</h2>
         <div className="text-sm text-muted-foreground">
@@ -175,7 +261,10 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
             {/* Current time indicator (red line) */}
             <div
               className="absolute left-0 right-0 border-t-2 border-red-500 z-10 flex items-center"
-              style={{ top: '44%', marginTop: '-1px' }}
+              style={{
+                top: `${stopwatchPosition}px`,
+                marginTop: '-1px',
+              }}
             >
               <div className="absolute -left-4 -top-3">
                 <Stopwatch color="#ea384c" />
@@ -218,7 +307,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                           return (
                             <div
                               key={taskIndex}
-                              className="absolute mx-1"
+                              className="absolute mx-1 group" // <-- Added `group` here
                               style={{
                                 top: `${topPosition}px`,
                                 left: '4px',
@@ -226,7 +315,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                 height: `${heightInMinutes}px`,
                                 minHeight: '40px',
                                 maxHeight: '200px',
-                                width: '160px',
+                                width: '180px',
                               }}
                             >
                               <TaskCard
@@ -237,6 +326,12 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                     avatar: task.employeeAvatar,
                                   }
                                 }
+                              />
+                              <Trash2
+                                size={19}
+                                className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={() => handleDeleteTask(task.id)}
+                                // ...........No
                               />
                             </div>
                           )
@@ -400,7 +495,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       return (
                         <div
                           key={index}
-                          className="absolute"
+                          className="absolute mx-1 group"
                           style={{
                             top: `${top}px`,
                             left: `${left}%`,
@@ -422,6 +517,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                 avatar: task.employeeAvatar,
                               }
                             }
+                          />
+                          <Trash2
+                            size={19}
+                            className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={() => handleDeleteTask(task.id)}
                           />
                         </div>
                       )

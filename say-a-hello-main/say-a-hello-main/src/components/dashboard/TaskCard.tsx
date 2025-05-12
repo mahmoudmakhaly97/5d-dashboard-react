@@ -23,56 +23,58 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
 
   return (
     <>
-      <div
-        style={{  marginLeft: '00px' }}
-        className={` rounded-md p-3 mb-3 cursor-pointer ${getBgColor()}`}
-        onClick={() => setIsOpen(true)}
-      >
-        <div className="flex items-center gap-3">
-          {' '}
-          {employee ? (
-            <div className="flex align-center ">
-              {' '}
-              <Avatar className="h-6 w-6 mr-2 mb-2">
-                <AvatarImage src={employee.avatar} alt={employee.name} />
-                <AvatarFallback>
-                  <img src="https://placehold.co/30x30" alt={employee.name} />
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs font-medium">{employee.name}</span>
-            </div>
-          ) : (
-            <div className="flex align-center">
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                <User size={14} />
+      <div>
+        <div
+          style={{ marginLeft: '00px' }}
+          className={` rounded-md p-3 mb-3 cursor-pointer ${getBgColor()}`}
+          onClick={() => setIsOpen(true)}
+        >
+          <div className="flex items-center gap-3">
+            {' '}
+            {employee ? (
+              <div className="flex align-center ">
+                {' '}
+                <Avatar className="h-6 w-6 mr-2 mb-2">
+                  <AvatarImage src={employee.avatar} alt={employee.name} />
+                  <AvatarFallback>
+                    <img src="https://placehold.co/30x30" alt={employee.name} />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-medium">{employee.name}</span>
               </div>
-              <span className="text-xs font-medium">{employee?.name} </span>
+            ) : (
+              <div className="flex align-center">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mr-2">
+                  <User size={14} />
+                </div>
+                <span className="text-xs font-medium">{employee?.name} </span>
+              </div>
+            )}
+          </div>{' '}
+          <div className="text-sm font-medium">{task.title}</div>
+          <div className="text-xs mt-1">{task.time}</div>
+          {task.assignees && task.assignees.length > 0 && (
+            <div className="flex mt-2">
+              {task.assignees.map((assignee, index) => (
+                <div
+                  key={assignee.id}
+                  className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center -ml-1 first:ml-0 border border-white text-xs font-medium"
+                  style={{ zIndex: 10 - index }}
+                >
+                  {assignee.avatar ? (
+                    <img
+                      src={assignee.avatar}
+                      alt={assignee.name}
+                      className="w-full h-full rounded-full"
+                    />
+                  ) : (
+                    assignee.name.substring(0, 1)
+                  )}
+                </div>
+              ))}
             </div>
           )}
-        </div>{' '}
-        <div className="text-sm font-medium">{task.title}</div>
-        <div className="text-xs mt-1">{task.time}</div>
-        {task.assignees && task.assignees.length > 0 && (
-          <div className="flex mt-2">
-            {task.assignees.map((assignee, index) => (
-              <div
-                key={assignee.id}
-                className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center -ml-1 first:ml-0 border border-white text-xs font-medium"
-                style={{ zIndex: 10 - index }}
-              >
-                {assignee.avatar ? (
-                  <img
-                    src={assignee.avatar}
-                    alt={assignee.name}
-                    className="w-full h-full rounded-full"
-                  />
-                ) : (
-                  assignee.name.substring(0, 1)
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {isOpen && (

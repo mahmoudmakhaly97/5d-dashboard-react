@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { forwardRef, useImperativeHandle } from 'react'
+import { Trash2 } from 'lucide-react' // Import delete icon
 
 import {
   Accordion,
@@ -11,6 +12,7 @@ import TaskTimeline from '@/components/dashboard/TaskTimeline'
 import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import './Dashboard.css'
+import TaskCard from '@/components/dashboard/TaskCard'
 export interface Task {
   assignedToEmployeeId?: number
   departmentId?: number
@@ -47,7 +49,8 @@ const Dashboard = forwardRef((props, ref) => {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
+  const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
+  const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate, setCurrentDate] = useState(today)
@@ -123,6 +126,7 @@ const Dashboard = forwardRef((props, ref) => {
       setLoading(false)
     }
   }
+  const toggleDeleteModal = () => setDeleteModal(!deleteModal)
 
   useImperativeHandle(ref, () => ({
     refresh: () => {
@@ -131,6 +135,23 @@ const Dashboard = forwardRef((props, ref) => {
     getSelectedEmployee: () => selectedEmployee,
     getSelectedDate: () => currentDate,
     setSelectedDate: (date: Date) => setCurrentDate(date),
+    // Add this method to get the task card with delete button
+    getTaskCard: (task: any, employee: any) => (
+      <div className="task-card-container">
+        <TaskCard task={task} employee={employee} />
+        <button
+          className="task-delete-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            setTaskToDelete(task)
+            toggleDeleteModal()
+          }}
+        >
+          <Trash2 size={16} />
+          <p className="text-danger"> dcdcdcd</p>
+        </button>
+      </div>
+    ),
   }))
 
   useEffect(() => {

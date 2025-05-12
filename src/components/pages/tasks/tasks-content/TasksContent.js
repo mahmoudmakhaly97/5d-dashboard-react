@@ -5,6 +5,7 @@ import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
 import { format } from 'date-fns'
+import { Tooltip } from 'reactstrap'
 
 import check from '/assets/images/check.png'
 import './Tasks.scss'
@@ -17,6 +18,9 @@ const TasksContent = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   const [taskCreated, setTaskCreated] = useState(false)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
+  const [tooltipMessage, setTooltipMessage] = useState('')
+  const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
 
   const [formData, setFormData] = useState({
     title: '',
@@ -37,8 +41,11 @@ const TasksContent = () => {
   const [modalMessage, setModalMessage] = useState(null)
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
+  const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
 
   const toggle = () => setModal(!modal)
+  const toggleDeleteModal = () => setDeleteModal(!deleteModal)
+
   const fetchData = async () => {
     try {
       // Fetch clients
@@ -66,6 +73,43 @@ const TasksContent = () => {
       console.error('Error fetching data:', error)
     }
   }
+
+  // Handle task deletion
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return
+
+    try {
+      const response = await fetch(
+        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+      if (response.ok) {
+        setModalMessage('Task deleted successfully')
+        setModalMessageVisible(true)
+        setTaskToDelete(null)
+        toggleDeleteModal()
+
+        // Refresh the dashboard
+        if (dashboardRef.current) {
+          dashboardRef.current.refresh()
+        }
+
+        // Refresh data
+        await fetchData()
+      } else {
+        const errorData = await response.json()
+        setModalMessage(`Error deleting task: ${errorData.message || 'Unknown error'}`)
+        setModalMessageVisible(true)
+      }
+    } catch (error) {
+      setModalMessage('Error deleting task. Please try again.')
+      setModalMessageVisible(true)
+    }
+  }
+
   // Fetch data when component mounts
   useEffect(() => {
     /*************  ✨ Windsurf Command ⭐  *************/
@@ -180,17 +224,11 @@ const TasksContent = () => {
     try {
       const getValidISODate = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
-        const datePart = format(new Date(date), 'yyyy-MM-dd') // Get the date part
+        const datePart = format(new Date(date), 'yyyy-MM-dd')
         const dateTimeString = `${datePart}T${timeStr}`
-
-        // Convert to UTC
-        const parsed = new Date(dateTimeString + 'Z') // 'Z' ensures it's UTC
-        console.log('Parsed Date:', parsed) // Debugging
+        const parsed = new Date(dateTimeString + 'Z')
         return isNaN(parsed) ? null : parsed.toISOString()
       }
-
-      const start = formData.startTime || selectedDate
-      const end = formData.endTime || selectedDate
 
       const apiData = {
         title: formData.title,
@@ -213,45 +251,60 @@ const TasksContent = () => {
         body: JSON.stringify(apiData),
       })
 
-      if (response.ok) {
-        setModalMessage('Task created successfully')
-        setModalMessageVisible(true)
-        toggle()
+      const responseData = await response.json() // Always parse the response
 
-        setTaskCreated(true)
-        // Call the Dashboard's refresh method
-        if (dashboardRef.current) {
-          dashboardRef.current.refresh()
+      if (!response.ok) {
+        // Check for time slot conflict error
+        if (
+          responseData.message?.includes('Time slot conflict') ||
+          responseData.error?.includes('Time slot conflict') ||
+          responseData.message?.includes('overlaps') ||
+          responseData.error?.includes('overlaps')
+        ) {
+          setTooltipMessage(
+            'Oops! This time slot overlaps with an existing task. Please choose a different time.',
+          )
+          setTooltipOpen(true)
+          setTimeout(() => setTooltipOpen(false), 4000)
+        } else {
+          console.error('Unhandled task creation error:', responseData)
         }
 
-        // Optionally, fetch updated task list here
-        await fetchData() // Ensure this re-fetches the task list and updates state
-
-        // Reset form
-        setFormData({
-          title: '',
-          description: '',
-          assignedToEmployeeId: 0,
-          assignedToEmployeeName: '',
-          createdByEmployeeId: 0,
-          createdByEmployeeName: '',
-          updatedByEmployeeId: 0,
-          departmentId: 0,
-          departmentName: '',
-          slotCount: 1,
-          clientId: '',
-          startTime: '',
-          endTime: '',
-          createdAt: new Date().toISOString(),
-        })
-      } else {
-        const errorData = await response.json()
-        setModalMessage('Error creating task: ' + (errorData.message || 'Unknown error'))
-        setModalMessageVisible(true)
+        return
       }
-    } catch (error) {
-      setModalMessage('Error creating task: ' + error.message)
+
+      // Success case
+      setModalMessage('Task created successfully')
       setModalMessageVisible(true)
+      toggle()
+      setTaskCreated(true)
+
+      if (dashboardRef.current) {
+        dashboardRef.current.refresh()
+      }
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        assignedToEmployeeId: 0,
+        assignedToEmployeeName: '',
+        createdByEmployeeId: 0,
+        createdByEmployeeName: '',
+        updatedByEmployeeId: 0,
+        departmentId: 0,
+        departmentName: '',
+        slotCount: 1,
+        clientId: '',
+        startTime: '',
+        endTime: '',
+        createdAt: new Date().toISOString(),
+      })
+    } catch (error) {
+      console.error('Error submitting task:', error)
+      setTooltipMessage('Oops! Something went wrong while creating the task. Please try again.')
+      setTooltipOpen(true)
+      setTimeout(() => setTooltipOpen(false), 4000)
     }
   }
 
@@ -382,7 +435,7 @@ const TasksContent = () => {
                 </Col>
                 <Col md={6}>
                   <FormGroup>
-                    <Label for="slotCount">Duration </Label>
+                    <Label for="slotCount">Duration</Label>
                     <Input
                       type="number"
                       id="slotCount"
@@ -392,6 +445,14 @@ const TasksContent = () => {
                       onChange={handleInputChange}
                       required
                     />
+                    <Tooltip
+                      placement="top"
+                      isOpen={tooltipOpen}
+                      target="slotCount"
+                      popperClassName="tooltip-style"
+                    >
+                      <p className="text-danger fw-bold">{tooltipMessage}</p>
+                    </Tooltip>
                     <small className="text-muted">
                       Total time:{' '}
                       {formData.slotCount * 20 >= 60
@@ -478,9 +539,16 @@ const TasksContent = () => {
                 </Col>
               </Row>
 
-              <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
-                Create Task
-              </Button>
+              <div>
+                <Button
+                  id="submitTaskBtn"
+                  color="primary"
+                  type="submit"
+                  className="px-3 w-100 py-2 mt-4"
+                >
+                  Create Task
+                </Button>
+              </div>
             </Form>
           </Col>
         </Row>
@@ -494,12 +562,29 @@ const TasksContent = () => {
           toggle={() => setModalMessageVisible(false)}
           centered
         >
-          <div className="d-flex flex-column justify-content-center align-items-center gap-3">
+          <div className="d-flex flex-column justify-content-center align-items-center gap-3 p-4">
             <img src={check} width={70} height={70} alt="success" />
-            <h1 className="font-bold">{modalMessage}</h1>
+            <h4 className="text-center">{modalMessage}</h4>
+            <Button color="primary" onClick={() => setModalMessageVisible(false)}>
+              OK{' '}
+            </Button>
           </div>
         </ModalMaker>
       )}
+      <ModalMaker modal={deleteModal} toggle={toggleDeleteModal} centered size="md">
+        <div className="p-4 text-center">
+          <h4>Are you sure you want to delete this task?</h4>
+          <p className="text-muted mb-4">"{taskToDelete?.title}" will be permanently removed.</p>
+          <div className="d-flex justify-content-center gap-3">
+            <Button color="secondary" onClick={toggleDeleteModal}>
+              Cancel
+            </Button>
+            <Button color="danger" onClick={handleDeleteTask}>
+              Delete Task
+            </Button>
+          </div>
+        </div>
+      </ModalMaker>
       <div className="dashboard-container">
         <Dashboard ref={dashboardRef} />
       </div>
