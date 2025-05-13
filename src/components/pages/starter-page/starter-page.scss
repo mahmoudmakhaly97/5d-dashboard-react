@@ -1,0 +1,70 @@
+.starter-page {
+  height: 100vh;
+  background-color: #edefee;
+  .card {
+    position: relative;
+    padding-top: 130px !important; // enough space for the image
+    padding-bottom: 20px !important;
+    text-align: center;
+    transition: 0.3s all ease;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    border-radius: 25px !important;
+    width: 14.5rem;
+    height: 14.5rem;
+
+    img {
+      width: 100px;
+      height: 100px;
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      transition:
+        opacity 0.3s ease,
+        transform 0.3s ease;
+    }
+
+    .employees-img {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .employees-img-h {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &:hover {
+      background-color: #bb66cb !important;
+      color: #fff;
+
+      .employees-img {
+        opacity: 0;
+      }
+
+      .employees-img-h {
+        opacity: 1;
+      }
+      transform: scale(1.05);
+    }
+  }
+  h2 {
+    font-size: 1.7rem;
+    position: relative;
+    padding-bottom: 1rem;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      left: 4%;
+      background-color: #bb66cb;
+    }
+  }
+  h3 {
+    font-size: 1.4rem;
+    padding-top: 1.5rem;
+  }
+}

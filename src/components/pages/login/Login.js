@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, User } from 'lucide-react'
+import { ArrowLeft, Lock, User } from 'lucide-react'
 import {
   Button,
   Card,
@@ -91,7 +91,13 @@ const Login = () => {
       <Container>
         <Row className="justify-content-center">
           <Col md={8}>
-            <Card className="p-4">
+            <div className="d-flex align-items-center  back">
+              <div className="icon">
+                <ArrowLeft size={18} className="cursor-pointer " onClick={() => navigate('/')} />
+              </div>
+              <h4 className="pt-4">Back</h4>
+            </div>
+            <Card className="p-5">
               <CardBody>
                 <Form onSubmit={handleSubmit}>
                   <div className="d-flex flex-column align-items-center">
