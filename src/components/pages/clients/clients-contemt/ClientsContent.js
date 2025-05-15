@@ -21,12 +21,19 @@ const ClientsContent = () => {
     name: '',
     code: '',
   })
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+
   useEffect(() => {
     const fetchClients = async () => {
       try {
         setIsLoading(true)
         const response = await axios.get(
-          'http://tasks-service.5d-dev.com/api/Clients/GetAllClients',
+          'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          },
         )
         setClients(response.data)
       } catch (error) {
@@ -71,13 +78,22 @@ const ClientsContent = () => {
         }
 
         await axios.post(
-          `http://tasks-service.5d-dev.com/api/Clients/UpdateClient/${editClientId}`,
+          `http://attendance-service.5d-dev.com/api/Clients/UpdateClient/${editClientId}`,
           payload,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          },
         )
 
         setModalMessage('Client updated successfully')
       } else {
-        await axios.post('http://tasks-service.5d-dev.com/api/Clients/CreateClient', payload)
+        await axios.post('http://attendance-service.5d-dev.com/api/Clients/CreateClient', payload, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        })
         setModalMessage('Client added successfully')
       }
 
@@ -85,7 +101,15 @@ const ClientsContent = () => {
 
       setClientData({ name: '', code: '' })
       setIsEditing(false)
-      const response = await axios.get('http://tasks-service.5d-dev.com/api/Clients/GetAllClients')
+      const response = await axios.get(
+        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
+
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      )
       setClients(response.data)
     } catch (error) {
       setModalMessage(
@@ -103,11 +127,24 @@ const ClientsContent = () => {
     try {
       setIsLoading(true)
       await axios.post(
-        `http://tasks-service.5d-dev.com/api/Clients/DeleteClient/${clientToDelete.id}`,
+        `http://attendance-service.5d-dev.com/api/Clients/DeleteClient/${clientToDelete.id}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
       setModalMessage('Client deleted successfully')
 
-      const response = await axios.get('http://tasks-service.5d-dev.com/api/Clients/GetAllClients')
+      const response = await axios.get(
+        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      )
       setClients(response.data)
     } catch (error) {
       setModalMessage('Error deleting client: ' + (error.response?.data?.message || error.message))
@@ -194,41 +231,41 @@ const ClientsContent = () => {
         </div>
       )}
 
-<Row>
-  {/* If loading, show the loader */}
-  {isLoading ? (
-    <div className="d-flex justify-content-center align-items-center mt-5">
-      <Loader />
-    </div>
-  ) : clients.length === 0 ? (
-    // Show "No clients found" if no clients are available after loading
-    <Col md={12} className="d-flex justify-content-center align-items-center mt-5">
-      <h4>No clients found</h4>
-    </Col>
-  ) : (
-    // Show clients if they exist
-    clients.map((client) => (
-      <Col md={6} key={client.id} className="mb-2">
-        <Alert color="secondary" className="border-0 mb-0">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              {client.name} - {client.clientCode}
-            </div>
-            <div className="d-flex gap-2">
-              <Pen
-                className="pointer mx-2"
-                size={16}
-                onClick={() => handleEditClient(client)}
-              />
-
-              <X className="pointer" size={16} onClick={() => confirmDelete(client)} />
-            </div>
+      <Row>
+        {/* If loading, show the loader */}
+        {isLoading ? (
+          <div className="d-flex justify-content-center align-items-center mt-5">
+            <Loader />
           </div>
-        </Alert>
-      </Col>
-    ))
-  )}
-</Row>
+        ) : clients.length === 0 ? (
+          // Show "No clients found" if no clients are available after loading
+          <Col md={12} className="d-flex justify-content-center align-items-center mt-5">
+            <h4>No clients found</h4>
+          </Col>
+        ) : (
+          // Show clients if they exist
+          clients.map((client) => (
+            <Col md={6} key={client.id} className="mb-2">
+              <Alert color="secondary" className="border-0 mb-0">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    {client.name} - {client.clientCode}
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Pen
+                      className="pointer mx-2"
+                      size={16}
+                      onClick={() => handleEditClient(client)}
+                    />
+
+                    <X className="pointer" size={16} onClick={() => confirmDelete(client)} />
+                  </div>
+                </div>
+              </Alert>
+            </Col>
+          ))
+        )}
+      </Row>
 
       {confirmDeleteModal && (
         <ModalMaker

@@ -34,6 +34,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedTaskToDelete, setSelectedTaskToDelete] = useState<Task | null>(null)
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -62,12 +64,13 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     try {
       const response = await fetch(
-        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
+        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(taskId),
         },
@@ -91,10 +94,15 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const fetchData = async () => {
     try {
       const response = await fetch(
-        'http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks?' +
+        'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks?' +
           new URLSearchParams({
             timestamp: Date.now().toString(),
           }),
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
       const data = await response.json()
       setTasks(data)

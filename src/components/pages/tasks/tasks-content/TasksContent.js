@@ -24,6 +24,7 @@ const TasksContent = () => {
   const [editModal, setEditModal] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -53,7 +54,12 @@ const TasksContent = () => {
     try {
       // Fetch clients
       const clientsResponse = await fetch(
-        'http://tasks-service.5d-dev.com/api/Clients/GetAllClients',
+        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
       const clientsData = await clientsResponse.json()
       setClients(clientsData)
@@ -83,7 +89,12 @@ const TasksContent = () => {
 
     try {
       const response = await fetch(
-        `http://tasks-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
+        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
         {
           method: 'DELETE',
         },
@@ -247,10 +258,11 @@ const TasksContent = () => {
         createdAt: new Date().toISOString(),
       }
 
-      const response = await fetch('http://tasks-service.5d-dev.com/api/Tasks/CreateTask', {
+      const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/CreateTask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -368,7 +380,12 @@ const TasksContent = () => {
 
       // Fetch the task details
       const response = await fetch(
-        `http://tasks-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
+        `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
 
       if (!response.ok) {
@@ -445,10 +462,11 @@ const TasksContent = () => {
         createdAt: formData.createdAt,
       }
 
-      const response = await fetch('http://tasks-service.5d-dev.com/api/Tasks/UpdateTask', {
+      const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/UpdateTask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiData),
       })

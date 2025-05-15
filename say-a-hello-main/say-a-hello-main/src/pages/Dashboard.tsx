@@ -54,6 +54,7 @@ const Dashboard = forwardRef((props, ref) => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate, setCurrentDate] = useState(today)
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
 
   const fetchData = async () => {
     try {
@@ -62,11 +63,23 @@ const Dashboard = forwardRef((props, ref) => {
       // Fetch departments
       const departmentsResponse = await fetch(
         'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
       const departmentsData = await departmentsResponse.json()
 
       // Fetch tasks
-      const tasksResponse = await fetch('http://tasks-service.5d-dev.com/api/Tasks/GetAllTasks')
+      const tasksResponse = await fetch(
+        'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      )
       const tasksData = await tasksResponse.json()
 
       // Process data and create department structure
