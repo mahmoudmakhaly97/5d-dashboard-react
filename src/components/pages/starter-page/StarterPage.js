@@ -99,7 +99,8 @@ const StarterPage = () => {
         <div className="d-flex gap-4">
           <Card
             className="p-4 rounded-4 cursor-pointer d-flex flex-column align-items-center justify-content-center bg-white border-0"
-            onClick={handleEmployeeClick}
+            // onClick={handleEmployeeClick}
+            onClick={() => navigate('/tasks')}
           >
             <img src="./assets/images/employees.svg" className="employees-img" alt="employees" />
             <img

@@ -71,7 +71,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
           },
         },
       )
@@ -106,7 +106,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
           },
         },
         {
@@ -174,8 +174,14 @@ const TasksContent = () => {
   }, [selectedEmployee, selectedDate])
   const handleInputChange = (e) => {
     const { name, value } = e.target
-
-    if (name === 'departmentId') {
+    // For client selection
+    if (name === 'clientId') {
+      setFormData((prev) => ({
+        ...prev,
+        clientId: value,
+      }))
+      return
+    } else if (name === 'departmentId') {
       const selectedDept = departments.find((dept) => dept.id === Number(value))
       const filtered = selectedDept
         ? employees.filter((emp) => emp.department === selectedDept.name)
@@ -278,7 +284,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authTasks.token}`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
         },
         body: JSON.stringify(apiData),
       })
@@ -286,22 +292,22 @@ const TasksContent = () => {
       const responseData = await response.json() // Always parse the response
 
       if (!response.ok) {
-        // Check for time slot conflict error
-        if (
-          responseData.message?.includes('Time slot conflict') ||
-          responseData.error?.includes('Time slot conflict') ||
-          responseData.message?.includes('overlaps') ||
-          responseData.error?.includes('overlaps')
-        ) {
+        // Try to read as text first
+        const errorText = await response.text()
+
+        // Check if it's the time slot conflict message
+        if (errorText.includes('Time slot conflict') || errorText.includes('overlaps')) {
           setTooltipMessage(
             'Oops! This time slot overlaps with an existing task. Please choose a different time.',
           )
           setTooltipOpen(true)
           setTimeout(() => setTooltipOpen(false), 4000)
-        } else {
-          console.error('Unhandled task creation error:', responseData)
+          return
         }
 
+        // If not the expected message, show generic error
+        setModalMessage(`Error creating task: ${errorText || 'Unknown error'}`)
+        setModalMessageVisible(true)
         return
       }
 
@@ -366,11 +372,6 @@ const TasksContent = () => {
       </option>
     )
   })
-  useEffect(() => {
-    if (selectedEmployee) {
-      console.log('Selected employee:', selectedEmployee)
-    }
-  }, [selectedEmployee])
 
   useEffect(() => {
     if (selectedDate) {
@@ -390,16 +391,14 @@ const TasksContent = () => {
   }, [taskCreated])
   const handleEditTask = async (taskId) => {
     try {
-      // Show loading state
       setModalMessage('Loading task details...')
       setModalMessageVisible(true)
 
-      // Fetch the task details
       const response = await fetch(
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
           },
         },
       )
@@ -413,13 +412,9 @@ const TasksContent = () => {
 
       const taskData = await response.json()
 
-      // Close loading modal
       setModalMessageVisible(false)
-
-      // Set the task data in the form
       setTaskToEdit(taskData)
 
-      // Convert dates to local format for the form
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
       const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
 
@@ -434,13 +429,12 @@ const TasksContent = () => {
         departmentId: taskData.departmentId || 0,
         departmentName: taskData.departmentName || '',
         slotCount: taskData.slotCount || 1,
-        clientId: taskData.clientId || '',
+        clientId: taskData.clientId || '', // Make sure this is set from taskData
         startTime: startTime,
         endTime: endTime,
         createdAt: taskData.createdAt || new Date().toISOString(),
       })
 
-      // Open the edit modal
       setEditModal(true)
     } catch (error) {
       console.error('Error fetching task details:', error)
@@ -473,6 +467,7 @@ const TasksContent = () => {
         updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
         slotCount: Number(formData.slotCount),
+        clientId: formData.clientId, // Make sure this is included
         startTime: getValidISODate(formData.startTime),
         endTime: getValidISODate(formData.endTime),
         createdAt: formData.createdAt,
@@ -482,7 +477,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authTasks.token}`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
         },
         body: JSON.stringify(apiData),
       })
@@ -594,7 +589,11 @@ const TasksContent = () => {
                     >
                       <option value="">Select a client</option>
                       {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
+                        <option
+                          key={client.id}
+                          value={client.id}
+                          selected={client.id === formData.clientId} // Ensure selected client is highlighted
+                        >
                           {client.name} (Code: {client.clientCode})
                         </option>
                       ))}
