@@ -54,6 +54,7 @@ const Dashboard = forwardRef((props, ref) => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate, setCurrentDate] = useState(today)
+
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
 

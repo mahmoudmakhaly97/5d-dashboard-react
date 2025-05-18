@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import axios from 'axios'
 import './starter-page.scss'
 import { ModalMaker } from '../../ui'
+import { useAuth } from '../../../context/AuthContext'
 
 const StarterPage = () => {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ const StarterPage = () => {
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const { loginAsEmployee } = useAuth()
 
   const handleEmployeeClick = async () => {
     setIsLoading(true)
@@ -53,14 +55,19 @@ const StarterPage = () => {
 
       console.log('✅ Verification response:', response.data)
 
-      // Save full response to localStorage
-      localStorage.setItem('authData', JSON.stringify(response.data))
-
-      // If response contains token or expected key
+      // Assuming response includes a token or useful data
       if (response.data.token || response.data.success === true) {
+        localStorage.setItem(
+          'authData',
+          JSON.stringify({
+            token: response.data.token || 'default-employee-token',
+            role: 'employee',
+          }),
+        )
+
+        loginAsEmployee(response.data.token || 'default-employee-token')
         navigate('/tasks')
       } else {
-        // Even if token is present but no success flag, allow navigation
         setError(
           response.data.message || 'Verification failed. Please check the OTP and try again.',
         )

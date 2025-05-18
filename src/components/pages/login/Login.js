@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, User } from 'lucide-react'
+
 import {
   Button,
   Card,
@@ -18,8 +19,11 @@ import {
 import logo from '/assets/images/5d-logo.png'
 
 import './login.scss'
+import { useAuth } from '../../../context/AuthContext'
 
 const Login = () => {
+  const { loginAsHR } = useAuth()
+
   const [login, setLogin] = useState({
     email: '',
     password: '',
@@ -60,6 +64,7 @@ const Login = () => {
       }
 
       navigate('/employees')
+      loginAsHR(response.data.token, rememberMe)
     } catch (error) {
       // Swal.fire({
       //   icon: 'error',
