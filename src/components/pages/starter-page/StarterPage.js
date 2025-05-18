@@ -12,17 +12,8 @@ const StarterPage = () => {
   const [qrModal, setQrModal] = useState(false)
   const [qrUid, setQrUid] = useState('')
   const [otp, setOtp] = useState('')
-  const [otpModal, setOtpModal] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [pollingInterval, setPollingInterval] = useState(null)
-
-  // Clean up interval on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingInterval) clearInterval(pollingInterval)
-    }
-  }, [pollingInterval])
 
   const handleEmployeeClick = async () => {
     setIsLoading(true)
@@ -33,28 +24,7 @@ const StarterPage = () => {
       setIsLoading(false)
       setQrModal(true)
 
-      // Start polling for device linking
-      const interval = setInterval(async () => {
-        try {
-          const res = await axios.post(
-            'http://attendance-service.5d-dev.com/api/QRLogin/qr/link-device',
-            { uid: response.data.uid },
-          )
-
-          // Modified this part to handle UUID response
-          if (res.data.uid) {
-            clearInterval(interval)
-            await verifyUuid(res.data.uid)
-          }
-        } catch (err) {
-          console.error('Error checking device link:', err)
-        }
-      }, 2000)
-
-      setPollingInterval(interval)
-
       setTimeout(() => {
-        clearInterval(interval)
         if (qrModal) {
           setQrModal(false)
           setOtpModal(true)
@@ -68,25 +38,48 @@ const StarterPage = () => {
   }
 
   const verifyUuid = async (uuid) => {
+    if (!otp || otp.trim() === '') {
+      setError('Please enter the OTP.')
+      return
+    }
+
     setIsLoading(true)
+    setError('')
     try {
       const response = await axios.post(
         'http://attendance-service.5d-dev.com/api/QRLogin/qr/verify-otp',
-        { uuid: uuid },
+        { uid: uuid, otp },
+        { headers: { 'Content-Type': 'application/json' } },
       )
+
+      console.log('Verification response:', response.data) // Add this for debugging
 
       if (response.data.success) {
         navigate('/tasks')
       } else {
-        setError(response.data.message || 'Verification failed. Please try again.')
+        setError(
+          response.data.message || 'Verification failed. Please check the OTP and try again.',
+        )
       }
     } catch (err) {
-      console.error('Error verifying UUID:', err)
-      setError(err.response?.data?.message || 'Error verifying UUID. Please try again.')
+      console.error('Verification error:', err.response?.data || err.message)
+      setError(err.response?.data?.message || 'Error verifying OTP. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
+
+  // Fix the timeout issue:
+  useEffect(() => {
+    let timer
+    if (qrModal) {
+      timer = setTimeout(() => {
+        setQrModal(false)
+        setError('QR code expired. Please generate a new one.')
+      }, 30000)
+    }
+    return () => clearTimeout(timer)
+  }, [qrModal])
 
   return (
     <div className="d-flex justify-content-center align-items-center min-vh-100 starter-page gap-3">
@@ -135,7 +128,7 @@ const StarterPage = () => {
             <Button
               className="mt-3"
               color="primary"
-              onClick={verifyUuid}
+              onClick={() => verifyUuid(qrUid)} // FIXED
               block
               disabled={isLoading}
             >
