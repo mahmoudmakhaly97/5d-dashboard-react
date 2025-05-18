@@ -1,6 +1,6 @@
 {
   "name": "react-employee-calendar",
-  "version": "1.258.9",
+  "version": "1.758.9",
   "description": "A reusable React component library for employee calendars",
   "main": "dist/index.umd.js",
   "module": "dist/index.es.js",

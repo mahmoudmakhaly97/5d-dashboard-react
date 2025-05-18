@@ -36,7 +36,6 @@ const StarterPage = () => {
       setIsLoading(false)
     }
   }
-
   const verifyUuid = async (uuid) => {
     if (!otp || otp.trim() === '') {
       setError('Please enter the OTP.')
@@ -52,17 +51,22 @@ const StarterPage = () => {
         { headers: { 'Content-Type': 'application/json' } },
       )
 
-      console.log('Verification response:', response.data) // Add this for debugging
+      console.log('✅ Verification response:', response.data)
 
-      if (response.data.success) {
+      // Save full response to localStorage
+      localStorage.setItem('authData', JSON.stringify(response.data))
+
+      // If response contains token or expected key
+      if (response.data.token || response.data.success === true) {
         navigate('/tasks')
       } else {
+        // Even if token is present but no success flag, allow navigation
         setError(
           response.data.message || 'Verification failed. Please check the OTP and try again.',
         )
       }
     } catch (err) {
-      console.error('Verification error:', err.response?.data || err.message)
+      console.error('❌ Verification error:', err.response?.data || err.message)
       setError(err.response?.data?.message || 'Error verifying OTP. Please try again.')
     } finally {
       setIsLoading(false)

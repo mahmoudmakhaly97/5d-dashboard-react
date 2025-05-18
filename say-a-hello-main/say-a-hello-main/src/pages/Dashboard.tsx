@@ -55,6 +55,7 @@ const Dashboard = forwardRef((props, ref) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate, setCurrentDate] = useState(today)
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+  const authTasks = JSON.parse(localStorage.getItem('authData'))
 
   const fetchData = async () => {
     try {
@@ -76,7 +77,7 @@ const Dashboard = forwardRef((props, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )

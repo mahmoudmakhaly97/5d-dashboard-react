@@ -35,6 +35,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedTaskToDelete, setSelectedTaskToDelete] = useState<Task | null>(null)
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+  const authTasks = JSON.parse(localStorage.getItem('authData'))
 
   // Update current time every second
   useEffect(() => {
@@ -70,7 +71,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
           body: JSON.stringify(taskId),
         },
@@ -100,7 +101,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )

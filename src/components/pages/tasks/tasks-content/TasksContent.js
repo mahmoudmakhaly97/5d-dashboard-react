@@ -9,13 +9,15 @@ import { Tooltip } from 'reactstrap'
 
 import check from '/assets/images/check.png'
 import './Tasks.scss'
+import { useLocation, useNavigate } from 'react-router-dom'
+// Modify your initial state to use location state
+
 const TasksContent = () => {
   const [modal, setModal] = useState(false)
   const [clients, setClients] = useState([])
   const [departments, setDepartments] = useState([])
   const [employees, setEmployees] = useState([])
   const [filteredEmployees, setFilteredEmployees] = useState([])
-  const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   const [taskCreated, setTaskCreated] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
@@ -25,7 +27,17 @@ const TasksContent = () => {
   const [taskToEdit, setTaskToEdit] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
-
+  const authTasks = JSON.parse(localStorage.getItem('authData'))
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [selectedEmployee, setSelectedEmployee] = useState(
+    location.state?.employeeId
+      ? {
+          id: location.state.employeeId,
+          name: location.state.employeeName,
+        }
+      : null,
+  )
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -61,25 +73,53 @@ const TasksContent = () => {
           },
         },
       )
+
+      if (!clientsResponse.ok) {
+        throw new Error(`Clients fetch failed with status ${clientsResponse.status}`)
+      }
+
       const clientsData = await clientsResponse.json()
       setClients(clientsData)
 
       // Fetch departments
       const departmentsResponse = await fetch(
         'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
+
+      if (!departmentsResponse.ok) {
+        throw new Error(`Departments fetch failed with status ${departmentsResponse.status}`)
+      }
+
       const departmentsData = await departmentsResponse.json()
       setDepartments(departmentsData)
 
       // Fetch all employees without pagination
       const employeesResponse = await fetch(
         'http://attendance-service.5d-dev.com/api/Employee/GetAllEmployees?pageNumber=1&pageSize=1000',
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       )
+
+      if (!employeesResponse.ok) {
+        throw new Error(`Employees fetch failed with status ${employeesResponse.status}`)
+      }
+
       const employeesData = await employeesResponse.json()
-      setEmployees(employeesData.employees)
-      setFilteredEmployees(employeesData.employees)
+      setEmployees(employeesData.employees || [])
+      setFilteredEmployees(employeesData.employees || [])
     } catch (error) {
       console.error('Error fetching data:', error)
+      // You might want to set some error state here to show to the user
+      setModalMessage(`Error fetching data: ${error.message}`)
+      setModalMessageVisible(true)
     }
   }
 
@@ -92,7 +132,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
         {
@@ -262,7 +302,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -383,7 +423,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )
@@ -466,7 +506,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -528,7 +568,14 @@ const TasksContent = () => {
       setTimeout(() => setTooltipOpen(false), 4000)
     }
   }
-
+  if (!selectedEmployee && !location.state?.employeeId) {
+    return (
+      <div className="alert alert-danger">
+        No employee selected. Please scan the QR code again.
+        <Button onClick={() => navigate('/')}>Go Back</Button>
+      </div>
+    )
+  }
   return (
     <div className="tasks-container">
       {/* Button should only appear when an employee is selected */}
@@ -883,8 +930,9 @@ const TasksContent = () => {
       <div className="dashboard-container">
         <Dashboard
           ref={dashboardRef}
-          onEditTask={handleEditTask} // Add this line
-          key={refreshKey} // This will force a fresh mount when changed
+          onEditTask={handleEditTask}
+          key={refreshKey}
+          initialEmployeeId={selectedEmployee?.id} // Pass the employee ID to the dashboard
         />
       </div>
     </div>
