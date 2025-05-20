@@ -44,7 +44,7 @@ export interface Department {
   employees: Employee[]
 }
 const Dashboard = forwardRef((props, ref) => {
-  const { onEditTask } = props
+  const { onEditTask, onDeleteTask } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,7 +78,7 @@ const Dashboard = forwardRef((props, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -269,6 +269,7 @@ const Dashboard = forwardRef((props, ref) => {
             currentDate={currentDate}
             onDateSelect={(date) => setCurrentDate(date)}
             onEditTask={onEditTask}
+            onDeleteTask={onDeleteTask}
           />
         </div>
       </div>

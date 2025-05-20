@@ -1,6 +1,8 @@
 /* eslint-disable prettier/prettier */
 import { useState, useEffect, useRef } from 'react'
 import { Dashboard } from 'react-employee-calendar'
+import { UncontrolledTooltip } from 'reactstrap'
+
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
@@ -22,11 +24,16 @@ const TasksContent = () => {
   const [selectedDate, setSelectedDate] = useState(null)
   const [taskCreated, setTaskCreated] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
+
   const [tooltipMessage, setTooltipMessage] = useState('')
   const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
   const [editModal, setEditModal] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [managerTeam, setManagerTeam] = useState([])
+  const [isManager, setIsManager] = useState(false)
+  const [isLoadingTeam, setIsLoadingTeam] = useState(false)
+  const [teamError, setTeamError] = useState(null)
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
   const Navigate = useNavigate()
@@ -63,6 +70,49 @@ const TasksContent = () => {
 
   const toggle = () => setModal(!modal)
   const toggleDeleteModal = () => setDeleteModal(!deleteModal)
+  const toggleTooltip = () => setTooltipOpen(!tooltipOpen)
+
+  useEffect(() => {
+    const fetchManagerTeam = async () => {
+      setIsLoadingTeam(true)
+      setTeamError(null)
+      try {
+        const response = await fetch(
+          'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
+          {
+            headers: {
+              Authorization: `Bearer ${authTasks.token}`,
+            },
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        // 4. Handle potential nested data (adjust based on actual response)
+        const teamMembers = Array.isArray(data) ? data : data.employees || []
+        setManagerTeam(teamMembers)
+      } catch (error) {
+        console.error('Failed to fetch manager team:', error)
+        setTeamError(error.message)
+      } finally {
+        setIsLoadingTeam(false)
+      }
+    }
+
+    fetchManagerTeam()
+  }, [authTasks.token])
+  // 5. Robust employee check with type safety
+  const isEmployeeUnderManager = (employeeId) => {
+    if (!employeeId || !managerTeam.length) return false
+
+    // Convert both IDs to numbers for comparison
+    const employeeIdNum = Number(employeeId)
+    return managerTeam.some((employee) => employee && Number(employee.id) === employeeIdNum)
+  }
 
   const fetchData = async () => {
     try {
@@ -71,7 +121,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -98,59 +148,54 @@ const TasksContent = () => {
   }
 
   // Handle task deletion
-  const handleDeleteTask = async () => {
-    if (!taskToDelete) return
+  const handleDeleteTask = async (task) => {
+    if (!task.id) return
+    const taskId = Number(task.id)
 
     try {
       const response = await fetch(
-        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskToDelete.id}`,
+        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
         {
+          method: 'POST',
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            Authorization: `Bearer ${authTasks.token}`,
           },
-        },
-        {
-          method: 'DELETE',
+          body: JSON.stringify(taskId),
         },
       )
 
-      if (response.ok) {
-        setModalMessage('Task deleted successfully')
-        setModalMessageVisible(true)
-        setTaskToDelete(null)
-        toggleDeleteModal()
-        setRefreshKey((prev) => prev + 1) // This will force a re-render
-
-        // Refresh the dashboard
-        if (dashboardRef.current) {
-          dashboardRef.current.refresh()
-        }
-
-        // Refresh data
-        await fetchData()
-      } else {
-        const errorData = await response.json()
-        setModalMessage(`Error deleting task: ${errorData.message || 'Unknown error'}`)
-        setModalMessageVisible(true)
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`)
       }
+
+      const data = await response.json()
+      setModalMessage(data.message)
+      setModalMessageVisible(true)
+
+      // Refresh the dashboard after successful deletion
+      if (dashboardRef.current) {
+        dashboardRef.current.refresh()
+      }
+
+      // Alternatively, you can increment the refreshKey to force a complete re-render
+      setRefreshKey((prevKey) => prevKey + 1)
     } catch (error) {
-      setModalMessage('Error deleting task. Please try again.')
+      console.error('Failed to delete task:', error)
+      setModalMessage('Failed to delete task. Please try again.')
       setModalMessageVisible(true)
     }
-  }
 
+    toggleDeleteModal()
+    setTaskToDelete(null)
+  }
+  const handleTaskDeleted = (task) => {
+    setTaskToDelete(task)
+    toggleDeleteModal()
+  }
   // Fetch data when component mounts
   useEffect(() => {
-    /*************  ✨ Windsurf Command ⭐  *************/
-    /**
-     * Fetches all the data needed for the task creation form. This includes all
-     * clients, departments, and employees. The data is fetched from the tasks and
-     * attendance services.
-     *
-     * @returns {Promise<void>}
-     */
-    /*******  f68bb810-6e8d-451e-a13b-eea84224ecc2  *******/
-
     fetchData()
   }, [])
   // Add this useEffect to listen for selection changes
@@ -278,18 +323,15 @@ const TasksContent = () => {
         endTime: getValidISODate(formData.endTime),
         createdAt: new Date().toISOString(),
       }
-      console.log('Submitting task with data:', apiData)
 
       const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/CreateTask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
-
-      const responseData = await response.json() // Always parse the response
 
       if (!response.ok) {
         // Try to read as text first
@@ -310,35 +352,39 @@ const TasksContent = () => {
         setModalMessageVisible(true)
         return
       }
+      if (response.ok) {
+        setModalMessage('Task created successfully')
+        setModalMessageVisible(true)
+        toggle()
+        setTaskCreated(true)
+        if (dashboardRef.current) {
+          dashboardRef.current.refresh()
+        }
 
-      // Success case
-      setModalMessage('Task created successfully')
-      setModalMessageVisible(true)
-      toggle()
-      setTaskCreated(true)
-      window.location.reload()
-
-      if (dashboardRef.current) {
-        dashboardRef.current.refresh()
+        if (dashboardRef.current) {
+          dashboardRef.current.refresh()
+        }
+        setFormData({
+          title: '',
+          description: '',
+          assignedToEmployeeId: 0,
+          assignedToEmployeeName: '',
+          createdByEmployeeId: 0,
+          createdByEmployeeName: '',
+          updatedByEmployeeId: 0,
+          departmentId: 0,
+          departmentName: '',
+          slotCount: 1,
+          clientId: '',
+          startTime: '',
+          endTime: '',
+          createdAt: new Date().toISOString(),
+        })
+        await fetchData()
       }
+      // Success case
 
       // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        assignedToEmployeeId: 0,
-        assignedToEmployeeName: '',
-        createdByEmployeeId: 0,
-        createdByEmployeeName: '',
-        updatedByEmployeeId: 0,
-        departmentId: 0,
-        departmentName: '',
-        slotCount: 1,
-        clientId: '',
-        startTime: '',
-        endTime: '',
-        createdAt: new Date().toISOString(),
-      })
     } catch (error) {
       console.error('Error submitting task:', error)
       setTooltipMessage(
@@ -349,40 +395,6 @@ const TasksContent = () => {
     }
   }
 
-  // Generate slot options (each slot is 20 minutes)
-  const slotOptions = Array.from({ length: 24 * 3 }, (_, i) => {
-    const totalMinutes = (i + 1) * 20 // Each slot is 20 minutes
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
-
-    // Format display text
-    let displayText = ''
-    if (hours > 0 && minutes > 0) {
-      displayText = `${hours}h ${minutes}m`
-    } else if (hours > 0) {
-      displayText = `${hours}h`
-    } else {
-      displayText = `${minutes}m`
-    }
-
-    const slotCount = i + 1
-    return (
-      <option key={slotCount} value={slotCount}>
-        {`${slotCount} slot${slotCount > 1 ? 's' : ''} (${displayText})`}
-      </option>
-    )
-  })
-
-  useEffect(() => {
-    if (selectedDate) {
-      console.log('Selected date:', selectedDate)
-    }
-  }, [selectedDate])
-  useEffect(() => {
-    if (dashboardRef.current) {
-      console.log('Dashboard methods:', dashboardRef.current)
-    }
-  }, [])
   useEffect(() => {
     if (taskCreated) {
       fetchData() // Re-fetch the data after task creation
@@ -398,7 +410,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -477,7 +489,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -505,7 +517,6 @@ const TasksContent = () => {
       }
 
       // Success case
-      window.location.reload()
       setModalMessage('Task updated successfully')
       setModalMessageVisible(true)
       setEditModal(false)
@@ -539,24 +550,47 @@ const TasksContent = () => {
       setTimeout(() => setTooltipOpen(false), 4000)
     }
   }
-  // if (!selectedEmployee && !location.state?.employeeId) {
-  //   return (
-  //     <div className="alert alert-danger">
-  //       No employee selected. Please scan the QR code again.
-  //       <Button onClick={() => navigate('/')}>Go Back</Button>
-  //     </div>
-  //   )
-  // }
+
   return (
     <div className="tasks-container">
-      {/* Button should only appear when an employee is selected */}
-      {selectedEmployee?.id && selectedEmployee?.name && (
+      {isLoadingTeam ? (
+        <div>Loading team data...</div>
+      ) : teamError ? (
+        <div className="text-danger">Error loading team: {teamError}</div>
+      ) : selectedEmployee?.id &&
+        selectedEmployee?.name &&
+        isEmployeeUnderManager(selectedEmployee.id) ? (
         <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
           <Button color="primary" onClick={toggle} className="add-task">
             Add Task for {selectedEmployee.name}
           </Button>
         </div>
+      ) : (
+        selectedEmployee?.name && (
+          <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+            <span
+              id="disabledButtonWrapper"
+              style={{
+                display: 'inline-block',
+                cursor: 'not-allowed',
+              }}
+            >
+              <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+                Add Task for {selectedEmployee?.name}
+              </Button>
+            </span>
+
+            <UncontrolledTooltip
+              target="disabledButtonWrapper"
+              placement="top"
+              delay={{ show: 0, hide: 0 }}
+            >
+              ⚠️ You are not allowed to add a task to this employee.
+            </UncontrolledTooltip>
+          </div>
+        )
       )}
+
       <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
         <Row>
           <Col md={12}>
@@ -753,7 +787,6 @@ const TasksContent = () => {
           </Col>
         </Row>
       </ModalMaker>
-
       {/* Success/Error Modal */}
       {modalMessageVisible && (
         <ModalMaker
@@ -779,7 +812,7 @@ const TasksContent = () => {
             <Button color="secondary" onClick={toggleDeleteModal}>
               Cancel
             </Button>
-            <Button color="danger" onClick={handleDeleteTask}>
+            <Button color="danger" onClick={() => handleDeleteTask(taskToDelete)}>
               Delete Task
             </Button>
           </div>
@@ -903,7 +936,12 @@ const TasksContent = () => {
         </Row>
       </ModalMaker>
       <div className="dashboard-container">
-        <Dashboard ref={dashboardRef} onEditTask={handleEditTask} key={refreshKey} />
+        <Dashboard
+          ref={dashboardRef}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleTaskDeleted} // Note: Changed from handleDeleteTask to handleTaskDeleted
+          key={refreshKey} // This will force a re-render when refreshKey changes
+        />
       </div>
     </div>
   )

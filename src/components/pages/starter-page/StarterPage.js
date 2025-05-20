@@ -53,8 +53,6 @@ const StarterPage = () => {
         { headers: { 'Content-Type': 'application/json' } },
       )
 
-      console.log('✅ Verification response:', response.data)
-
       // Assuming response includes a token or useful data
       if (response.data.token || response.data.success === true) {
         localStorage.setItem(
@@ -99,8 +97,8 @@ const StarterPage = () => {
         <div className="d-flex gap-4">
           <Card
             className="p-4 rounded-4 cursor-pointer d-flex flex-column align-items-center justify-content-center bg-white border-0"
-            // onClick={handleEmployeeClick}
-            onClick={() => navigate('/tasks')}
+            onClick={handleEmployeeClick}
+            // onClick={() => navigate('/tasks')}
           >
             <img src="./assets/images/employees.svg" className="employees-img" alt="employees" />
             <img

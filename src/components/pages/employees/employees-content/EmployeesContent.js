@@ -112,8 +112,8 @@ const Dashboard = () => {
               <img
                 className="img-thumbnail rounded-circle "
                 src={
-                  employeeData.imageUrl
-                    ? `http://attendance-service.5d-dev.com${employeeData.imageUrl}`
+                  employeeData.ImagePath
+                    ? `http://attendance-service.5d-dev.com${employeeData.ImagePath}`
                     : 'https://placehold.co/30x30'
                 }
               />
@@ -268,7 +268,6 @@ const Dashboard = () => {
         setModalMessage(modalContent)
         setModalMessageVisible(true)
       } catch (error) {
-        console.log(error)
         setModalMessageVisible(true)
         setModalMessage(<div>Error fetching employee details.</div>)
       } finally {

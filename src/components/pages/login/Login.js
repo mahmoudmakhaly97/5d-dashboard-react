@@ -63,15 +63,9 @@ const Login = () => {
         sessionStorage.setItem('authToken', data.token)
       }
 
+      loginAsHR(data.token, login.rememberMe)
       navigate('/employees')
-      loginAsHR(response.data.token, rememberMe)
-    } catch (error) {
-      // Swal.fire({
-      //   icon: 'error',
-      //   title: 'Login Failed',
-      //   text: error.message || 'An error occurred during login. Please try again.',
-      // })
-    }
+    } catch (error) {}
   }
 
   const handleSubmit = async (e) => {

@@ -16,6 +16,7 @@ interface TaskTimelineProps {
   currentDate: Date
   onDateSelect?: (date: Date) => void
   onEditTask: (task: Task) => void
+  onDeleteTask: (task: Task) => void
 }
 
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
@@ -24,6 +25,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   currentDate,
   onDateSelect,
   onEditTask,
+  onDeleteTask,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date()) // Add this state
@@ -54,42 +56,6 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const handleDeleteClick = (task: Task) => {
     setSelectedTaskToDelete(task)
     setShowDeleteModal(true)
-  }
-
-  const confirmDelete = async () => {
-    if (!selectedTaskToDelete) return
-    const taskId = selectedTaskToDelete.id
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(
-        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
-          },
-          body: JSON.stringify(taskId),
-        },
-      )
-
-      if (!response.ok) throw new Error('Failed to delete task')
-
-      // Optional: close the modal before refresh
-      setShowDeleteModal(false)
-
-      // Hard refresh the page
-      window.location.reload()
-    } catch (err) {
-      setError((err as Error).message)
-      console.error('Delete error:', err)
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   const fetchData = async () => {
@@ -208,7 +174,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const stopwatchPosition = calculateStopwatchPosition()
 
   return (
-    <div className="relative w-full  p-4 overflow-auto" style={{ minHeight: '100vh' }}>
+    <div className="relative w-full  p-4 overflow-auto">
       <div className="flex mb-4 justify-between items-center">
         <h2 className="text-xl font-semibold">{getTitle()}</h2>
         <div className="text-sm text-muted-foreground">
@@ -570,7 +536,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       {selectedTaskToDelete && (
         <ConfirmDeleteModal
           open={showDeleteModal}
-          onConfirm={confirmDelete}
+          onConfirm={() => onDeleteTask(selectedTaskToDelete)}
           onCancel={() => setShowDeleteModal(false)}
           taskName={selectedTaskToDelete.title}
         />

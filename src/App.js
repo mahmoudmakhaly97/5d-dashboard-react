@@ -25,11 +25,11 @@ const App = () => {
             <Route path="/reports" element={<Reports />} />
             <Route path="/clients" element={<Clients />} />
           </Route>
-          <Route path="/tasks" element={<Tasks />} />
-          {/* 
+          {/* <Route path="/tasks" element={<Tasks />} /> */}
+
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
             <Route path="/tasks" element={<Tasks />} />
-          </Route> */}
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
