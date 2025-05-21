@@ -131,10 +131,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     if (!department) return []
 
     if (employee) {
-      // Show tasks for selected employee within date range
-      return employee.tasks.filter((task) =>
-        dateRange.some((date) => isSameDay(new Date(task.date), date)),
-      )
+      // Show ALL tasks for selected employee (not filtered by date)
+      return employee.tasks
     } else {
       // Show tasks for all employees in the department for today only
       return department.employees.flatMap((emp) =>
@@ -204,7 +202,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     <div className="relative w-full overflow-auto  p-4">
       <div className="flex mb-4 justify-between items-center w-full px-[20px]">
         <h2 className="text-xl font-semibold">
-          {department ? `${department.name} - Today's Tasks` : 'All Tasks'}
+          {department
+            ? employee
+              ? `${employee.name}'s Tasks`
+              : `${department.name} - Today's Tasks`
+            : 'All Tasks'}
         </h2>
         <div className="text-sm text-muted-foreground">
           {employee && dateRange.length > 1
