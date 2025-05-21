@@ -150,3 +150,16 @@
 .flex.mb-4.justify-between.items-center.w-full.px-\[20px\] {
   width: calc(100% - 17rem) !important;
 }
+.hour-container {
+  padding: 5px 10px !important;
+  width: 300px;
+  .form-control {
+    height: 30px;
+  }
+  .period {
+    height: 30px;
+    padding: 7px;
+    line-height: 10px;
+    border-color: #dbdfe6;
+  }
+}

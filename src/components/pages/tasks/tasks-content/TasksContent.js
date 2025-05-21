@@ -13,6 +13,7 @@ import check from '/assets/images/check.png'
 import './Tasks.scss'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
+import TimeSelector from './TimeSelector'
 // Modify your initial state to use location state
 
 const TasksContent = () => {
@@ -68,8 +69,14 @@ const TasksContent = () => {
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
   const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
-
-  const toggle = () => setModal(!modal)
+  const toggle = () => {
+    setModal(!modal)
+    if (!modal) {
+      // When opening the modal
+      resetFormData()
+      setTaskToEdit(null) // Clear any edit state
+    }
+  }
   const toggleDeleteModal = () => setDeleteModal(!deleteModal)
   const toggleTooltip = () => setTooltipOpen(!tooltipOpen)
 
@@ -300,15 +307,68 @@ const TasksContent = () => {
 
     return () => clearInterval(interval)
   }, [selectedEmployee, selectedDate])
+  const resetFormData = () => {
+    setFormData({
+      title: '',
+      description: '',
+      assignedToEmployeeId: 0,
+      assignedToEmployeeName: '',
+      createdByEmployeeId: 0,
+      createdByEmployeeName: '',
+      updatedByEmployeeId: 0,
+      departmentId: 0,
+      departmentName: '',
+      slotCount: 1,
+      clientId: '',
+      startTime: '',
+      endTime: '',
+      createdAt: new Date().toISOString(),
+    })
+  }
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const getValidISODate = (timeStr, date = selectedDate) => {
+      const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
-        const datePart = format(new Date(date), 'yyyy-MM-dd')
-        const dateTimeString = `${datePart}T${timeStr}`
-        const parsed = new Date(dateTimeString + 'Z')
-        return isNaN(parsed) ? null : parsed.toISOString()
+
+        // Handle time strings like "HH:MM AM/PM"
+        if (timeStr.includes(' ')) {
+          const [timePart, period] = timeStr.split(' ')
+          const [hoursStr, minutesStr] = timePart.split(':')
+
+          let hours = parseInt(hoursStr, 10)
+          const minutes = parseInt(minutesStr || '0', 10)
+
+          // Convert 12-hour to 24-hour format
+          if (period === 'PM' && hours < 12) hours += 12
+          if (period === 'AM' && hours === 12) hours = 0
+
+          // Create date object with local time
+          const dateObj = new Date(date)
+          dateObj.setHours(hours, minutes, 0, 0)
+
+          // Convert to ISO string with timezone offset
+          const tzOffset = dateObj.getTimezoneOffset() * 60000
+          return new Date(dateObj.getTime() - tzOffset).toISOString()
+        }
+
+        // Handle simple "HH:MM" format
+        const [hoursStr, minutesStr] = timeStr.split(':')
+        const hours = parseInt(hoursStr, 10)
+        const minutes = parseInt(minutesStr || '0', 10)
+
+        const dateObj = new Date(date)
+        dateObj.setHours(hours, minutes, 0, 0)
+
+        const tzOffset = dateObj.getTimezoneOffset() * 60000
+        return new Date(dateObj.getTime() - tzOffset).toISOString()
+      }
+
+      // Validate required fields
+      if (!formData.startTime || !formData.slotCount || formData.slotCount <= 0) {
+        setModalMessage('Start time and slot count are required and must be valid')
+        setModalMessageVisible(true)
+        return
       }
 
       const apiData = {
@@ -319,26 +379,24 @@ const TasksContent = () => {
         createdByEmployeeId: Number(formData.createdByEmployeeId),
         updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
-        slotCount: Number(formData.slotCount),
-        startTime: getValidISODate(formData.startTime),
-        endTime: getValidISODate(formData.endTime),
+        slotCount: Math.max(1, Number(formData.slotCount)), // Ensure at least 1
+        startTime: convertToEgyptISOTime(formData.startTime),
+        endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime) : null,
         createdAt: new Date().toISOString(),
+        clientId: formData.clientId, // Make sure this is included
       }
 
       const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/CreateTask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
         },
         body: JSON.stringify(apiData),
       })
 
       if (!response.ok) {
-        // Try to read as text first
         const errorText = await response.text()
-
-        // Check if it's the time slot conflict message
         if (errorText.includes('Time slot conflict') || errorText.includes('overlaps')) {
           setTooltipMessage(
             'Oops! This time slot overlaps with an existing task. Please choose a different time.',
@@ -347,49 +405,27 @@ const TasksContent = () => {
           setTimeout(() => setTooltipOpen(false), 4000)
           return
         }
-
-        // If not the expected message, show generic error
         setModalMessage(`Error creating task: ${errorText || 'Unknown error'}`)
         setModalMessageVisible(true)
         return
       }
-      if (response.ok) {
-        setModalMessage('Task created successfully')
-        setModalMessageVisible(true)
-        toggle()
-        setTaskCreated(true)
-        if (dashboardRef.current) {
-          dashboardRef.current.refresh()
-        }
 
-        if (dashboardRef.current) {
-          dashboardRef.current.refresh()
-        }
-        setFormData({
-          title: '',
-          description: '',
-          assignedToEmployeeId: 0,
-          assignedToEmployeeName: '',
-          createdByEmployeeId: 0,
-          createdByEmployeeName: '',
-          updatedByEmployeeId: 0,
-          departmentId: 0,
-          departmentName: '',
-          slotCount: 1,
-          clientId: '',
-          startTime: '',
-          endTime: '',
-          createdAt: new Date().toISOString(),
-        })
-        await fetchData()
-      }
       // Success case
+      setModalMessage('Task created successfully')
+      setModalMessageVisible(true)
+      toggle()
+      setTaskCreated(true)
 
-      // Reset form
+      if (dashboardRef.current) {
+        dashboardRef.current.refresh()
+      }
+
+      resetFormData()
+      await fetchData()
     } catch (error) {
       console.error('Error submitting task:', error)
       setTooltipMessage(
-        'Oops! This time slot overlaps with an existing task. Please choose a different time. ',
+        'Oops! This time slot overlaps with an existing task. Please choose a different time.',
       )
       setTooltipOpen(true)
       setTimeout(() => setTooltipOpen(false), 4000)
@@ -404,38 +440,47 @@ const TasksContent = () => {
   }, [taskCreated])
   const handleEditTask = async (taskId) => {
     try {
-      // Fetch task details without showing the loader
+      // Validate taskId
+
+      console.log('Fetching task with ID:', taskId) // Debug log
+
       const response = await fetch(
-        `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
+        `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
         {
           headers: {
-            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`, // Your token
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+            'Content-Type': 'application/json',
           },
         },
       )
 
       if (!response.ok) {
+        // Try to get error details from response
         const errorData = await response.json().catch(() => ({}))
+        console.error('API Error Details:', errorData) // Debug log
+
         throw new Error(
-          errorData.message || `Failed to fetch task details (Status: ${response.status})`,
+          errorData.message ||
+            errorData.title ||
+            `Failed to fetch task details (Status: ${response.status})`,
         )
       }
 
       const taskData = await response.json()
+      console.log('Task Data Received:', taskData) // Debug log
 
-      // 🔍 Add your validation check here before opening the modal
-      // For example, only allow editing if task is not completed
       if (taskData.status === 'Completed') {
         setModalMessage('This task is already completed and cannot be edited.')
         setModalMessageVisible(true)
         return
       }
 
-      setTaskToEdit(taskData)
-
+      // Format times
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
       const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
 
+      // Update state
+      setTaskToEdit(taskData)
       setFormData({
         title: taskData.title || '',
         description: taskData.description || '',
@@ -453,16 +498,14 @@ const TasksContent = () => {
         createdAt: taskData.createdAt || new Date().toISOString(),
       })
 
-      // ✅ Only open modal if everything passes
       setEditModal(true)
     } catch (error) {
-      console.error('Error fetching task details:', error)
-      setModalMessage(`Error loading task details: ${error.message}`)
+      console.error('Error in handleEditTask:', error)
+      setModalMessage(`Error: ${error.message}`)
       setModalMessageVisible(true)
       setEditModal(false)
     }
   }
-
   const handleUpdateTask = async (e) => {
     e.preventDefault()
 
@@ -654,17 +697,15 @@ const TasksContent = () => {
 
               <Row>
                 <Col md={6}>
-                  <FormGroup>
-                    <Label for="startTime">Start Time</Label>
-                    <Input
-                      type="time"
-                      id="startTime"
-                      name="startTime"
-                      value={formData.startTime}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </FormGroup>
+                  <TimeSelector
+                    label="Start Time"
+                    name="startTime"
+                    value={{
+                      hours: parseInt(formData.startTime.split(':')[0], 10),
+                      minutes: parseInt(formData.startTime.split(':')[1], 10),
+                    }}
+                    onChange={handleInputChange}
+                  />
                 </Col>
                 <Col md={6}>
                   <FormGroup>

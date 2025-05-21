@@ -382,7 +382,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                               <Pencil
                                 size={19}
                                 className="absolute  top-10 right-3  cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                onClick={() => onEditTask(task.id)}
+                                onClick={() => onEditTask(task)}
                               />
                             </div>
                           )
