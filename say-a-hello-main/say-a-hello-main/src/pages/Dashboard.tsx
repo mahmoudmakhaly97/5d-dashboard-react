@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import './Dashboard.css'
 import TaskCard from '@/components/dashboard/TaskCard'
 export interface Task {
+  createdAt: Date
   assignedToEmployeeId?: number
   departmentId?: number
   description?: string
@@ -43,8 +44,13 @@ export interface Department {
   name: string
   employees: Employee[]
 }
-const Dashboard = forwardRef((props, ref) => {
-  const { onEditTask, onDeleteTask } = props
+interface DashboardProps {
+  onEditTask: (task: Task) => void
+  onDeleteTask: (task: Task) => void
+  onAllowCreateTaskChange?: (allow: boolean) => void
+}
+const Dashboard = forwardRef((props: DashboardProps, ref) => {
+  const { onEditTask, onDeleteTask, onAllowCreateTaskChange } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,7 +63,11 @@ const Dashboard = forwardRef((props, ref) => {
 
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
-
+  const handleAllowCreateTaskChange = (allow: boolean) => {
+    if (props.onAllowCreateTaskChange) {
+      props.onAllowCreateTaskChange(allow)
+    }
+  }
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -67,7 +77,7 @@ const Dashboard = forwardRef((props, ref) => {
         'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
         {
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer   ${authToken}`,
           },
         },
       )
@@ -78,7 +88,7 @@ const Dashboard = forwardRef((props, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
           },
         },
       )
@@ -270,6 +280,7 @@ const Dashboard = forwardRef((props, ref) => {
             onDateSelect={(date) => setCurrentDate(date)}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
+            onAllowCreateTaskChange={handleAllowCreateTaskChange} // Add this
           />
         </div>
       </div>

@@ -18,8 +18,8 @@
 }
 .add-task {
   position: absolute;
-  top: 130px;
-  right: 20px;
+  top: 100px;
+  right: 37px;
   z-index: 1000;
 }
 .tasks-container {
@@ -109,4 +109,44 @@
       }
     }
   }
+}
+.btn-tasks-container {
+  width: calc(100% - 17rem);
+  button {
+    width: 35px;
+    height: 35px;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    background-color: rgba(193, 193, 193, 0.6);
+    color: rgba(0, 0, 0, 0.7);
+    &:hover {
+      background-color: rgba(193, 193, 193, 0.6);
+    }
+    svg.lucide.lucide-chevron-left,
+    svg.lucide.lucide-chevron-right {
+      opacity: 1 !important;
+    }
+  }
+  .current {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    width: auto !important;
+  }
+  .btn1 {
+    &:hover {
+      & + p {
+        opacity: 1 !important;
+      }
+    }
+  }
+  .btn2 {
+    &:hover {
+      & + p {
+        opacity: 1 !important;
+      }
+    }
+  }
+}
+.flex.mb-4.justify-between.items-center.w-full.px-\[20px\] {
+  width: calc(100% - 17rem) !important;
 }

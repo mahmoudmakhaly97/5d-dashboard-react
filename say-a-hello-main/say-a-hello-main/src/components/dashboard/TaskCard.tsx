@@ -3,7 +3,7 @@ import { Employee, Task } from '@/pages/Dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User } from 'lucide-react'
+import { MessageSquareX, User, X } from 'lucide-react'
 
 const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -76,12 +76,20 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
           )}
         </div>
       </div>
-
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="absolute inset-0" onClick={() => setIsOpen(false)}></div>
+          <Card className="relative z-[10000] w-full max-w-md">
             <CardHeader>
-              <CardTitle>{task.title}</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="max-w-[90%]" style={{ lineHeight: '1.2' }}>
+                  {task.title}
+                </CardTitle>
+                <MessageSquareX onClick={() => setIsOpen(false)} className="cursor-pointer" />
+              </div>
               <CardDescription className="flex items-center justify-between">
                 <span>
                   {task.time} {task.endTime ? `- ${task.endTime}` : ''}
@@ -91,8 +99,7 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
             </CardHeader>
             <CardContent>
               {task.description && <p className="text-sm mb-4">{task.description}</p>}
-
-              {task.assignees && task.assignees.length > 0 && (
+              {task.assignees?.length > 0 && (
                 <div className="mt-2">
                   <div className="text-sm font-medium mb-1">Assignees:</div>
                   <div className="flex">
@@ -115,13 +122,6 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
                   </div>
                 </div>
               )}
-
-              <button
-                className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md w-full"
-                onClick={() => setIsOpen(false)}
-              >
-                Close
-              </button>
             </CardContent>
           </Card>
         </div>

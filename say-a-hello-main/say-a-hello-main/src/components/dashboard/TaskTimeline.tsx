@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import TaskCard from './TaskCard'
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap'
 import * as Dialog from '@radix-ui/react-dialog'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
-import { Pencil, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { addWeeks, subWeeks } from 'date-fns'
+import { Button } from '../ui/button'
+import './index.scss'
 
 interface TaskTimelineProps {
   department: Department | null
@@ -17,8 +19,8 @@ interface TaskTimelineProps {
   onDateSelect?: (date: Date) => void
   onEditTask: (task: Task) => void
   onDeleteTask: (task: Task) => void
+  onAllowCreateTaskChange?: (allow: boolean) => void
 }
-
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
   department,
   employee,
@@ -26,9 +28,10 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   onDateSelect,
   onEditTask,
   onDeleteTask,
+  onAllowCreateTaskChange,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date()) // Add this state
+  const [currentTime, setCurrentTime] = useState(new Date())
   const [Tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -38,6 +41,25 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [selectedTaskToDelete, setSelectedTaskToDelete] = useState<Task | null>(null)
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
+  const [allowCreateTask, setAllowCreateTask] = useState(true)
+  const [currentMonthOffset, setCurrentMonthOffset] = useState(0)
+
+  const handleNextWeek = () => {
+    setCurrentWeekOffset((prev) => prev + 1)
+    setAllowCreateTask(true)
+    onAllowCreateTaskChange?.(true) // Notify parent
+  }
+  const handlePrevWeek = () => {
+    setCurrentWeekOffset((prev) => prev - 1)
+    setAllowCreateTask(false)
+    onAllowCreateTaskChange?.(false) // Notify parent
+  }
+  const handleCurrentWeek = () => {
+    setCurrentWeekOffset(0)
+    setAllowCreateTask(true)
+    onAllowCreateTaskChange?.(true)
+  }
 
   // Update current time every second
   useEffect(() => {
@@ -67,7 +89,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjMzMiIsInN1YiI6IjMzMiIsImVtYWlsIjoibWFobW91ZDEyM0BnbWFpbC5jb20iLCJqdGkiOiI3OWNkODZjMi05NzE3LTQxYjEtYjIzNC0zMTNlYzhhODk3YjkiLCJleHAiOjE3NDgwMTAzMzMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.D3hgfDm6yKhc-Po86DO5PYxf20DLUawdz2blgtjT8h8`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
           },
         },
       )
@@ -80,23 +102,28 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   useEffect(() => {
     fetchData()
   }, []) // Empty array means this runs only once when the component mounts
-
+  const isBefore10AM = (task: Task) => {
+    const taskDate = new Date(task.date)
+    const taskTime = new Date(task.createdAt || task.date) // Use createdAt if available, otherwise fall back to task.date
+    return taskTime.getHours() < 10
+  }
   // Get the date range - today only or full week based on selection
   const getDateRange = () => {
     if (!department) return [currentDate]
 
     if (employee) {
-      // For an employee, show the full week
+      // For an employee, show the full week with offset
+      const weekStart = startOfWeek(addWeeks(currentDate, currentWeekOffset))
+      const weekEnd = endOfWeek(addWeeks(currentDate, currentWeekOffset))
       return eachDayOfInterval({
-        start: startOfWeek(currentDate),
-        end: endOfWeek(currentDate),
+        start: weekStart,
+        end: weekEnd,
       })
     } else {
       // For all employees in department, just show today
       return [currentDate]
     }
   }
-
   const dateRange = getDateRange()
 
   // Filter tasks based on selected employee/department and date range
@@ -123,40 +150,40 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   // Get employees with tasks today for department view
   const getEmployeesWithTasksToday = () => {
     if (!department || employee) return []
-
     return department.employees.filter((emp) =>
       emp.tasks.some((task) => isSameDay(new Date(task.date), currentDate)),
     )
   }
-
   const employeesWithTasksToday = getEmployeesWithTasksToday()
 
   // Calculate hours for the timeline (6:00 AM - 6:00 PM)
   const hours = Array.from({ length: 9 }, (_, i) => i + 10)
+  const calculateTaskPosition = (task: Task) => {
+    const timeParts = task.time.split(':')
+    const hour = parseInt(timeParts[0])
+    const minute = parseInt(timeParts[1]?.split(' ')[0] || '0')
+    const isPM = task.time.toLowerCase().includes('pm')
 
-  // Get title based on selection
-  const getTitle = () => {
-    if (!department) return 'All Tasks'
-    if (employee) {
-      return dateRange.length > 1 ? (
-        <div className="flex items-center gap-3">
-          {' '}
-          <div className=" flex items-center bg-background rounded-full pl-1 pr-3 py-1 border border-border">
-            <Avatar className="h-6 w-6 mr-2">
-              <AvatarImage src={employee.avatar} alt={employee.name} />
-              <img src="https://placehold.co/30x30" alt={employee.name} />
-            </Avatar>
-            <span className="text-xs font-medium">{employee.name}</span>
-            <span className="ml-1 text-xs text-muted-foreground"></span>
-          </div>
-          <p className="ml-1 text-sm text-muted-foreground">{employee.name}'s Tasks</p>
-        </div>
-      ) : (
-        `${employee.name}'s Tasks Today`
-      )
+    const hourIn24 = isPM && hour !== 12 ? hour + 12 : hour === 12 && !isPM ? 0 : hour
+    const topPosition = (hourIn24 - 10) * 96 + (minute * 96) / 60
+
+    let heightInMinutes = 60
+    if (task.endTime) {
+      const endTimeParts = task.endTime.split(':')
+      const endHour = parseInt(endTimeParts[0])
+      const endMinute = parseInt(endTimeParts[1]?.split(' ')[0] || '0')
+      const isEndPM = task.endTime.toLowerCase().includes('pm')
+
+      const endHourIn24 =
+        isEndPM && endHour !== 12 ? endHour + 12 : endHour === 12 && !isEndPM ? 0 : endHour
+      const endPosition = (endHourIn24 - 10) * 96 + (endMinute * 96) / 60
+      heightInMinutes = endPosition - topPosition
     }
-    return `${department.name} - Today's Tasks`
+
+    return { top: topPosition, height: heightInMinutes }
   }
+  // Get title based on selection
+
   // Calculate stopwatch position
   const calculateStopwatchPosition = () => {
     const startHour = 10 // Calendar starts at 10 AM
@@ -174,36 +201,71 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const stopwatchPosition = calculateStopwatchPosition()
 
   return (
-    <div className="relative w-full  p-4 overflow-auto">
-      <div className="flex mb-4 justify-between items-center">
-        <h2 className="text-xl font-semibold">{getTitle()}</h2>
+    <div className="relative w-full overflow-auto  p-4">
+      <div className="flex mb-4 justify-between items-center w-full px-[20px]">
+        <h2 className="text-xl font-semibold">
+          {department ? `${department.name} - Today's Tasks` : 'All Tasks'}
+        </h2>
         <div className="text-sm text-muted-foreground">
           {employee && dateRange.length > 1
-            ? `Week of ${format(dateRange[0], 'MMM d')} - ${format(dateRange[dateRange.length - 1], 'MMM d, yyyy')}`
+            ? `${format(dateRange[0], 'MMM d')} - ${format(dateRange[6], 'MMM d, yyyy')}`
             : format(currentDate, 'EEEE, MMMM d, yyyy')}
         </div>
       </div>
-
-      {/* Show employees with tasks today when viewing a department */}
       {!employee && department && employeesWithTasksToday.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4 p-2 bg-muted/10 rounded-lg">
-          <div className="w-full text-sm font-medium mb-1 pl-2">Employees with tasks today:</div>
-          <div className="flex gap-2   w-full">
-            {employeesWithTasksToday.map((emp) => (
-              <div
-                key={emp.id}
-                className=" flex items-center bg-background rounded-full pl-1 pr-3 py-1 border border-border"
-              >
-                <Avatar className="h-6 w-6 mr-2">
+        <div className="flex border-b mb-2">
+          {employeesWithTasksToday.map((emp) => (
+            <div
+              key={emp.id}
+              className="flex-1 p-2 text-center font-medium cursor-pointer   relative left-[50px] max-w-[231px]"
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Avatar className="h-6 w-6">
                   <AvatarImage src={emp.avatar} alt={emp.name} />
                   <AvatarFallback>
                     <img src="https://placehold.co/30x30" alt={emp.name} />
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs font-medium">{emp.name}</span>
-                <span className="ml-1 text-xs text-muted-foreground"></span>
+                <span>{emp.name}</span>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Only show buttons when in weekly view */}
+      {employee && dateRange.length > 1 && (
+        <div className="flex gap-2 ml-4 my-4 justify-between btn-tasks-container">
+          <div className="relative group mr-2">
+            <Button
+              onClick={handlePrevWeek}
+              className="bg-gray-600 w-10 h-10 flex btn1 items-center justify-center text-[18px] transition-opacity rounded-full"
+            >
+              <ChevronLeft />
+            </Button>
+            <p className="absolute w-[120px] -top-8 left-[50px] text-center -translate-x-1/2 px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Previous week
+            </p>
+          </div>
+
+          {currentWeekOffset !== 0 && (
+            <Button
+              onClick={handleCurrentWeek}
+              className="bg-gray-600 px-4 py-2 rounded text-sm current "
+            >
+              Current Week
+            </Button>
+          )}
+
+          <div className="relative group">
+            <Button
+              onClick={handleNextWeek}
+              className="bg-gray-600 btn2 w-10 h-10 left-[50px] text-center flex items-center justify-center text-[18px] transition-opacity rounded-full"
+            >
+              <ChevronRight />
+            </Button>
+            <p className="absolute -top-8 right-[0px] w-[120px] text-center  px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Next week
+            </p>
           </div>
         </div>
       )}
@@ -216,7 +278,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
               {dateRange.map((date, index) => (
                 <div
                   key={index}
-                  className={`flex-1 p-2 text-center font-medium cursor-pointer ${
+                  className={`flex-1 p-2  text-center font-medium cursor-pointer   relative left-[50px] max-w-[230px] ${
                     (selectedDate ? isSameDay(selectedDate, date) : isToday(date))
                       ? 'bg-primary/10 rounded-t-md'
                       : ''
@@ -259,9 +321,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 // Week view layout
                 <div className="flex h-full ">
                   {dateRange.map((date, dateIndex) => (
-                    <div key={dateIndex} className="flex-1 relative h-full ">
+                    <div key={dateIndex} className="flex-1 relative h-full  days  ">
                       {tasks
-                        .filter((task) => isSameDay(new Date(task.date), date))
+                        .filter(
+                          (task) => isSameDay(new Date(task.date), date) && !isBefore10AM(task),
+                        )
                         .map((task, taskIndex) => {
                           // Calculate position based on time
                           const timeParts = task.time.split(':')
@@ -292,12 +356,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                               className="absolute mx-1 group TaskCard" // <-- Added `group` here
                               style={{
                                 top: `${topPosition}px`,
-                                left: '4px',
-                                right: '4px',
+
                                 height: `${heightInMinutes}px`,
                                 minHeight: '40px',
                                 maxHeight: '200px',
-                                width: '180px',
+                                width: '215px',
                               }}
                             >
                               <TaskCard
@@ -329,197 +392,63 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 </div>
               ) : (
                 // Day view layout - now used for both single employee day view and department view
-                <div className="relative h-full w-full">
-                  {(() => {
-                    function getTimePosition(timeString: string): number {
-                      if (!timeString) return 0
-                      const hourHeight = 96 // height of 1 hour
-                      const startHour = 10 // calendar starts at 10 AM
-
-                      // Split into time and modifier (AM/PM)
-                      const [time, modifier] = timeString.trim().split(' ')
-                      const [hoursStr, minutesStr] = time.split(':')
-
-                      let hours = parseInt(hoursStr)
-                      const minutes = parseInt(minutesStr || '0')
-
-                      // Convert to 24-hour format
-                      if (modifier) {
-                        if (modifier.toLowerCase() === 'pm' && hours !== 12) {
-                          hours += 12
-                        } else if (modifier.toLowerCase() === 'am' && hours === 12) {
-                          hours = 0
-                        }
-                      }
-
-                      // Calculate total minutes from start of day (10 AM)
-                      const totalMinutes = hours * 60 + minutes - startHour * 60
-                      const pixelsPerMinute = hourHeight / 60
-
-                      return Math.max(0, totalMinutes * pixelsPerMinute)
-                    }
-                    function getMinutes(timeString: string): number {
-                      if (!timeString) return 0
-
-                      const [time, modifier] = timeString.trim().split(' ')
-                      const [hoursStr, minutesStr] = time.split(':')
-
-                      let hours = parseInt(hoursStr)
-                      const minutes = parseInt(minutesStr || '0')
-
-                      // Convert to 24-hour format
-                      if (modifier) {
-                        if (modifier.toLowerCase() === 'pm' && hours !== 12) {
-                          hours += 12
-                        } else if (modifier.toLowerCase() === 'am' && hours === 12) {
-                          hours = 0
-                        }
-                      }
-
-                      return hours * 60 + minutes
-                    }
-
-                    // Group tasks by employee first
-                    const tasksByEmployee: Record<string, any[]> = {}
-                    tasks.forEach((task) => {
-                      const empName = task.employeeName || employee?.name || 'default'
-                      if (!tasksByEmployee[empName]) {
-                        tasksByEmployee[empName] = []
-                      }
-                      tasksByEmployee[empName].push(task)
-                    })
-
-                    // Process each employee's tasks separately
-                    const allPositionedTasks: any[] = []
-                    Object.values(tasksByEmployee).forEach((employeeTasks) => {
-                      // Sort tasks by start time
-                      const sortedTasks = [...employeeTasks].sort(
-                        (a, b) => getMinutes(a.time) - getMinutes(b.time),
-                      )
-
-                      const columns: any[][] = [[]]
-
-                      sortedTasks.forEach((task) => {
-                        let placed = false
-
-                        // Try to place in existing column
-                        for (const column of columns) {
-                          const lastTask = column[column.length - 1]
-                          if (
-                            !lastTask ||
-                            getMinutes(lastTask.endTime || '12:00 AM') <= getMinutes(task.time)
-                          ) {
-                            column.push(task)
-                            placed = true
-                            break
-                          }
-                        }
-
-                        // If couldn't place, create new column
-                        if (!placed) {
-                          columns.push([task])
-                        }
-                      })
-
-                      // Add column metadata to each task
-                      columns.forEach((column, columnIndex) => {
-                        column.forEach((task) => {
-                          allPositionedTasks.push({
-                            ...task,
-                            columnCount: columns.length,
-                            columnIndex,
-                            employeeColumnOffset: Object.keys(tasksByEmployee).indexOf(
-                              task.employeeName || employee?.name || 'default',
-                            ),
-                          })
-                        })
-                      })
-                    })
-
-                    // Calculate maximum columns across all employees
-                    const maxColumns = Math.max(
-                      ...Object.values(tasksByEmployee).map((tasks) => {
-                        const sorted = [...tasks].sort(
-                          (a, b) => getMinutes(a.time) - getMinutes(b.time),
-                        )
-                        let columns: any[][] = [[]]
-                        sorted.forEach((task) => {
-                          let placed = false
-                          for (const column of columns) {
-                            const lastTask = column[column.length - 1]
-                            if (
-                              !lastTask ||
-                              getMinutes(lastTask.endTime || '12:00 AM') <= getMinutes(task.time)
-                            ) {
-                              column.push(task)
-                              placed = true
-                              break
-                            }
-                          }
-                          if (!placed) columns.push([task])
-                        })
-                        return columns.length
-                      }),
-                      1,
-                    )
-
-                    return allPositionedTasks.map((task: any, index: number) => {
-                      // Calculate vertical position based on time
-                      const top = getTimePosition(task.time)
-
-                      // Calculate duration in minutes
-                      const startMinutes = getMinutes(task.time)
-                      const endMinutes = getMinutes(task.endTime || '12:00 AM')
-                      const duration = Math.max(endMinutes - startMinutes, 30) // Minimum 30 minutes
-
-                      // Calculate width and position with safe margins
-                      const totalColumns = maxColumns
-                      const columnWidth = 30 / totalColumns // Leave some margin
-                      const left =
-                        2 +
-                        (task.employeeColumnOffset * maxColumns + task.columnIndex) *
-                          (columnWidth + 1 / totalColumns)
-
-                      return (
+                <div className="w-full h-full ">
+                  <div className="relative h-full w-full ">
+                    <div className="flex">
+                      {employeesWithTasksToday.map((emp) => (
                         <div
-                          key={index}
-                          className="absolute mx-1 group TaskCard"
-                          style={{
-                            top: `${top}px`,
-                            left: `${left}%`,
-                            width: `${columnWidth}%`,
-                            height: `${duration}px`,
-                            maxWidth: '400px',
-                            minHeight: '40px',
-                            padding: '0 4px',
-                            boxSizing: 'border-box',
-                            zIndex: task.columnIndex + 1,
-                            minWidth: '200px',
-                          }}
+                          key={emp.id}
+                          className="flex-1 relative min-w-[200px] max-w-[250px]  last:border-r-0"
                         >
-                          <TaskCard
-                            task={task}
-                            employee={
-                              employee || {
-                                name: task.employeeName,
-                                avatar: task.employeeAvatar,
-                              }
-                            }
-                          />
-                          <Trash2
-                            size={19}
-                            className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={() => handleDeleteClick(task)}
-                          />
-                          <Pencil
-                            size={19}
-                            className="absolute   right-3   top-10 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={() => onEditTask(task.id)}
-                          />
+                          <div className="  h-[95vh]  today-border">
+                            {emp.tasks
+                              .filter(
+                                (task) =>
+                                  isSameDay(new Date(task.date), currentDate) &&
+                                  !isBefore10AM(task),
+                              )
+                              .map((task, taskIndex) => {
+                                const { top, height } = calculateTaskPosition(task)
+                                return (
+                                  <div
+                                    key={taskIndex}
+                                    className="absolute mx-1 group TaskCard "
+                                    style={{
+                                      top: `${top}px`,
+                                      height: `${height}px`,
+                                      minHeight: '40px',
+                                      maxHeight: '200px',
+                                      width: 'calc(100% - 8px)',
+
+                                      maxWidth: '190px',
+                                      left: '0px',
+                                    }}
+                                  >
+                                    <TaskCard
+                                      task={task}
+                                      employee={{
+                                        name: emp.name,
+                                        avatar: emp.avatar,
+                                      }}
+                                    />
+                                    <Trash2
+                                      size={19}
+                                      className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                      onClick={() => handleDeleteClick(task)}
+                                    />
+                                    <Pencil
+                                      size={19}
+                                      className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                      onClick={() => onEditTask(task)}
+                                    />
+                                  </div>
+                                )
+                              })}
+                          </div>
                         </div>
-                      )
-                    })
-                  })()}
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

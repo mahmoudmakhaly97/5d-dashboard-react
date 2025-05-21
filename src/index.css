@@ -125,17 +125,7 @@ html,
   -moz-tab-size: 4;
   -o-tab-size: 4;
   tab-size: 4;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    sans-serif,
-    'Apple Color Emoji',
-    'Segoe UI Emoji',
-    Segoe UI Symbol,
-    'Noto Color Emoji';
-  font-feature-settings: normal;
-  font-variation-settings: normal;
-  -webkit-tap-highlight-color: transparent;
+  font-family: 'Atkinson Hyperlegible Next', sans-serif !important;
 }
 body {
   margin: 0;
@@ -167,23 +157,7 @@ b,
 strong {
   font-weight: bolder;
 }
-code,
-kbd,
-samp,
-pre {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    Liberation Mono,
-    Courier New,
-    monospace;
-  font-feature-settings: normal;
-  font-variation-settings: normal;
-  font-size: 1em;
-}
+
 small {
   font-size: 80%;
 }
@@ -205,22 +179,7 @@ table {
   border-color: inherit;
   border-collapse: collapse;
 }
-button,
-input,
-optgroup,
-select,
-textarea {
-  font-family: inherit;
-  font-feature-settings: inherit;
-  font-variation-settings: inherit;
-  font-size: 100%;
-  font-weight: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-  margin: 0;
-  padding: 0;
-}
+
 button,
 select {
   text-transform: none;
@@ -1394,17 +1353,7 @@ body {
 .align-middle {
   vertical-align: middle;
 }
-.font-mono {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    Liberation Mono,
-    Courier New,
-    monospace;
-}
+
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
@@ -2846,4 +2795,7 @@ body {
 }
 [data-side='right'] .\[\[data-side\=right\]_\&\]\:cursor-e-resize {
   cursor: e-resize;
+}
+body {
+  background-color: red !important;
 }

@@ -97,8 +97,8 @@ const StarterPage = () => {
         <div className="d-flex gap-4">
           <Card
             className="p-4 rounded-4 cursor-pointer d-flex flex-column align-items-center justify-content-center bg-white border-0"
-            onClick={handleEmployeeClick}
-            // onClick={() => navigate('/tasks')}
+            // onClick={handleEmployeeClick}
+            onClick={() => navigate('/tasks')}
           >
             <img src="./assets/images/employees.svg" className="employees-img" alt="employees" />
             <img
@@ -145,7 +145,6 @@ const StarterPage = () => {
               {isLoading ? 'Verifying...' : 'Verify OTP'}
             </Button>
             <p className="mt-3">Scan this QR code with your mobile app</p>
-            <p className="text-muted small">The app will send the UUID back to our server</p>
             <p className="text-muted small">We'll then generate an OTP for verification</p>
           </div>
         )}

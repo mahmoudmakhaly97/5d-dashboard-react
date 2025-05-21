@@ -24,6 +24,7 @@ const TasksContent = () => {
   const [selectedDate, setSelectedDate] = useState(null)
   const [taskCreated, setTaskCreated] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
+  const [allowCreateTask, setAllowCreateTask] = useState(true) // Add this state
 
   const [tooltipMessage, setTooltipMessage] = useState('')
   const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
@@ -81,7 +82,7 @@ const TasksContent = () => {
           'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
           {
             headers: {
-              Authorization: `Bearer ${authTasks.token}`,
+              Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
             },
           },
         )
@@ -104,7 +105,7 @@ const TasksContent = () => {
     }
 
     fetchManagerTeam()
-  }, [authTasks.token])
+  }, [authTasks?.token])
   // 5. Robust employee check with type safety
   const isEmployeeUnderManager = (employeeId) => {
     if (!employeeId || !managerTeam.length) return false
@@ -121,7 +122,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
           },
         },
       )
@@ -160,7 +161,7 @@ const TasksContent = () => {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
           },
           body: JSON.stringify(taskId),
         },
@@ -328,7 +329,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
         },
         body: JSON.stringify(apiData),
       })
@@ -403,14 +404,12 @@ const TasksContent = () => {
   }, [taskCreated])
   const handleEditTask = async (taskId) => {
     try {
-      setModalMessage('Loading task details...')
-      setModalMessageVisible(true)
-
+      // Fetch task details without showing the loader
       const response = await fetch(
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId}`,
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`, // Your token
           },
         },
       )
@@ -424,7 +423,14 @@ const TasksContent = () => {
 
       const taskData = await response.json()
 
-      setModalMessageVisible(false)
+      // 🔍 Add your validation check here before opening the modal
+      // For example, only allow editing if task is not completed
+      if (taskData.status === 'Completed') {
+        setModalMessage('This task is already completed and cannot be edited.')
+        setModalMessageVisible(true)
+        return
+      }
+
       setTaskToEdit(taskData)
 
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
@@ -441,12 +447,13 @@ const TasksContent = () => {
         departmentId: taskData.departmentId || 0,
         departmentName: taskData.departmentName || '',
         slotCount: taskData.slotCount || 1,
-        clientId: taskData.clientId || '', // Make sure this is set from taskData
+        clientId: taskData.clientId || '',
         startTime: startTime,
         endTime: endTime,
         createdAt: taskData.createdAt || new Date().toISOString(),
       })
 
+      // ✅ Only open modal if everything passes
       setEditModal(true)
     } catch (error) {
       console.error('Error fetching task details:', error)
@@ -489,7 +496,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
         },
         body: JSON.stringify(apiData),
       })
@@ -552,19 +559,15 @@ const TasksContent = () => {
   }
 
   return (
-    <div className="tasks-container">
+    <div className="tasks-container mt-4">
       {isLoadingTeam ? (
         <div>Loading team data...</div>
       ) : teamError ? (
         <div className="text-danger">Error loading team: {teamError}</div>
-      ) : selectedEmployee?.id &&
-        selectedEmployee?.name &&
-        isEmployeeUnderManager(selectedEmployee.id) ? (
-        <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
-        </div>
+      ) : selectedEmployee?.id && selectedEmployee?.name && allowCreateTask ? (
+        <Button color="primary" onClick={toggle} className="add-task">
+          Add Task for {selectedEmployee.name}
+        </Button>
       ) : (
         selectedEmployee?.name && (
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
@@ -580,12 +583,10 @@ const TasksContent = () => {
               </Button>
             </span>
 
-            <UncontrolledTooltip
-              target="disabledButtonWrapper"
-              placement="top"
-              delay={{ show: 0, hide: 0 }}
-            >
-              ⚠️ You are not allowed to add a task to this employee.
+            <UncontrolledTooltip target="disabledButtonWrapper" placement="top">
+              {allowCreateTask
+                ? ' You are not allowed to add a task to this employee.'
+                : ' Cannot create tasks in past weeks.'}{' '}
             </UncontrolledTooltip>
           </div>
         )
@@ -667,7 +668,7 @@ const TasksContent = () => {
                 </Col>
                 <Col md={6}>
                   <FormGroup>
-                    <Label for="slotCount">Duration</Label>
+                    <Label for="slotCount">Slot Count</Label>
                     <Input
                       type="number"
                       id="slotCount"
@@ -891,7 +892,7 @@ const TasksContent = () => {
                 </Col>
                 <Col md={6}>
                   <FormGroup>
-                    <Label for="slotCount">Duration</Label>
+                    <Label for="slotCount"> Slot Count</Label>
                     <Input
                       type="number"
                       id="slotCount"
@@ -941,6 +942,7 @@ const TasksContent = () => {
           onEditTask={handleEditTask}
           onDeleteTask={handleTaskDeleted} // Note: Changed from handleDeleteTask to handleTaskDeleted
           key={refreshKey} // This will force a re-render when refreshKey changes
+          onAllowCreateTaskChange={setAllowCreateTask} // Pass the setter
         />
       </div>
     </div>
