@@ -512,12 +512,47 @@ const TasksContent = () => {
     if (!taskToEdit) return
 
     try {
-      const getValidISODate = (timeStr, date = selectedDate) => {
+      const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
-        const datePart = format(new Date(date), 'yyyy-MM-dd')
-        const dateTimeString = `${datePart}T${timeStr}`
-        const parsed = new Date(dateTimeString + 'Z')
-        return isNaN(parsed) ? null : parsed.toISOString()
+
+        // Handle time strings like "HH:MM AM/PM"
+        if (timeStr.includes(' ')) {
+          const [timePart, period] = timeStr.split(' ')
+          const [hoursStr, minutesStr] = timePart.split(':')
+
+          let hours = parseInt(hoursStr, 10)
+          const minutes = parseInt(minutesStr || '0', 10)
+
+          // Convert 12-hour to 24-hour format
+          if (period === 'PM' && hours < 12) hours += 12
+          if (period === 'AM' && hours === 12) hours = 0
+
+          // Create date object with local time
+          const dateObj = new Date(date)
+          dateObj.setHours(hours, minutes, 0, 0)
+
+          // Convert to ISO string with timezone offset
+          const tzOffset = dateObj.getTimezoneOffset() * 60000
+          return new Date(dateObj.getTime() - tzOffset).toISOString()
+        }
+
+        // Handle simple "HH:MM" format
+        const [hoursStr, minutesStr] = timeStr.split(':')
+        const hours = parseInt(hoursStr, 10)
+        const minutes = parseInt(minutesStr || '0', 10)
+
+        const dateObj = new Date(date)
+        dateObj.setHours(hours, minutes, 0, 0)
+
+        const tzOffset = dateObj.getTimezoneOffset() * 60000
+        return new Date(dateObj.getTime() - tzOffset).toISOString()
+      }
+
+      // Validate required fields
+      if (!formData.startTime || !formData.slotCount || formData.slotCount <= 0) {
+        setModalMessage('Start time and slot count are required and must be valid')
+        setModalMessageVisible(true)
+        return
       }
 
       const apiData = {
@@ -530,8 +565,8 @@ const TasksContent = () => {
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
         slotCount: Number(formData.slotCount),
         clientId: formData.clientId, // Make sure this is included
-        startTime: getValidISODate(formData.startTime),
-        endTime: getValidISODate(formData.endTime),
+        startTime: convertToEgyptISOTime(formData.startTime),
+        endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime) : null,
         createdAt: formData.createdAt,
       }
 
@@ -545,6 +580,7 @@ const TasksContent = () => {
       })
 
       const responseData = await response.json()
+      console.log('Update task response:', responseData)
 
       if (!response.ok) {
         if (
@@ -920,11 +956,9 @@ const TasksContent = () => {
               <Row>
                 <Col md={6}>
                   <FormGroup>
-                    <Label for="startTime">Start Time</Label>
-                    <Input
-                      type="time"
-                      id="startTime"
+                    <TimeSelector
                       name="startTime"
+                      label="Start Time"
                       value={formData.startTime}
                       onChange={handleInputChange}
                       required
