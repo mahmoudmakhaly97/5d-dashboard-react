@@ -60,6 +60,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [currentDate, setCurrentDate] = useState(today)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
@@ -71,7 +72,10 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const fetchData = async () => {
     try {
       setLoading(true)
-
+      setLoading(true)
+      setDepartments([]) // Clear existing data
+      setSelectedDepartment(null)
+      setSelectedEmployee(null)
       // Fetch departments
       const departmentsResponse = await fetch(
         'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
@@ -88,7 +92,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+            Authorization: `Bearer    ${authTasks.token}`,
           },
         },
       )
@@ -152,11 +156,14 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     }
   }
   const toggleDeleteModal = () => setDeleteModal(!deleteModal)
-
+  const refresh = async () => {
+    setIsRefreshing(true)
+    await fetchData()
+    setIsRefreshing(false)
+  }
   useImperativeHandle(ref, () => ({
-    refresh: () => {
-      fetchData()
-    },
+    refresh,
+
     getSelectedEmployee: () => selectedEmployee,
     getSelectedDate: () => currentDate,
     setSelectedDate: (date: Date) => setCurrentDate(date),

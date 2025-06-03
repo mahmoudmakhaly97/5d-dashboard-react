@@ -89,7 +89,7 @@ const TasksContent = () => {
           'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
           {
             headers: {
-              Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+              Authorization: `Bearer   ${authTasks?.token}`,
             },
           },
         )
@@ -129,7 +129,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )
@@ -168,7 +168,7 @@ const TasksContent = () => {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
           body: JSON.stringify(taskId),
         },
@@ -390,7 +390,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+          Authorization: `Bearer ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -416,10 +416,10 @@ const TasksContent = () => {
       toggle()
       setTaskCreated(true)
 
+      // Refresh the dashboard
       if (dashboardRef.current) {
         dashboardRef.current.refresh()
       }
-
       resetFormData()
       await fetchData()
     } catch (error) {
@@ -448,7 +448,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+            Authorization: `Bearer ${authTasks.token}`,
             'Content-Type': 'application/json',
           },
         },
@@ -574,7 +574,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MCIsInN1YiI6IjE2MCIsImVtYWlsIjoiYUBzLmNvbSIsImp0aSI6IjUzMDMxYTgwLWU2NmEtNDU0OS04OTQ0LWI3ZjcxOWQzMjc5ZCIsImV4cCI6MTc0ODI0NDk1NywiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.YXYOmxubjBXvwgpolZ1soPS3FvEAggAZm-ics2o1lFk`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -634,6 +634,57 @@ const TasksContent = () => {
       setTooltipMessage('Oops! Something went wrong while updating the task. Please try again.')
       setTooltipOpen(true)
       setTimeout(() => setTooltipOpen(false), 4000)
+    }
+  }
+  function parseTimeToSelectorValue(timeStr) {
+    // Default case (when timeStr is empty/null/undefined)
+    if (!timeStr) return { hours: 12, minutes: 0, period: 'AM' }
+
+    // Case 1: Input is a Date object or ISO string
+    const date = new Date(timeStr)
+    if (!isNaN(date.getTime())) {
+      const hours24 = date.getHours() // 0–23
+      const minutes = date.getMinutes()
+      const period = hours24 >= 12 ? 'PM' : 'AM'
+
+      let hours12 = hours24 % 12
+      if (hours12 === 0) hours12 = 12 // Convert 0 or 24 to 12
+
+      return {
+        hours: hours12,
+        minutes,
+        period,
+      }
+    }
+
+    // Case 2: Input is a string like "02:00 PM" or "14:00"
+    const timeParts = timeStr.trim().split(' ')
+    let time = timeParts[0]
+    let modifier = timeParts[1]
+
+    // Handle 24-hour format without AM/PM
+    if (!modifier && time.includes(':')) {
+      const [h, m] = time.split(':')
+      const hours24 = parseInt(h, 10)
+      const minutes = parseInt(m, 10)
+      const period = hours24 >= 12 ? 'PM' : 'AM'
+
+      let hours12 = hours24 % 12
+      if (hours12 === 0) hours12 = 12
+
+      return {
+        hours: hours12,
+        minutes,
+        period,
+      }
+    }
+
+    // Handle 12-hour format with AM/PM
+    const [h, m] = time.split(':')
+    return {
+      hours: h === '00' ? 12 : Number(h) % 12 || 12, // Convert 00 to 12, others to 1-12
+      minutes: Number(m),
+      period: modifier?.toUpperCase() === 'PM' ? 'PM' : 'AM',
     }
   }
 
@@ -959,7 +1010,7 @@ const TasksContent = () => {
                     <TimeSelector
                       name="startTime"
                       label="Start Time"
-                      value={formData.startTime}
+                      value={parseTimeToSelectorValue(formData.startTime)}
                       onChange={handleInputChange}
                       required
                     />
