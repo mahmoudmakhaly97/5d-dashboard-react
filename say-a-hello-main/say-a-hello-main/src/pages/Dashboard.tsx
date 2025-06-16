@@ -48,9 +48,11 @@ interface DashboardProps {
   onEditTask: (task: Task) => void
   onDeleteTask: (task: Task) => void
   onAllowCreateTaskChange?: (allow: boolean) => void
+  showOnlyMyTasks?: boolean
+  currentUserId?: string
 }
 const Dashboard = forwardRef((props: DashboardProps, ref) => {
-  const { onEditTask, onDeleteTask, onAllowCreateTaskChange } = props
+  const { onEditTask, onDeleteTask, showOnlyMyTasks, currentUserId } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,7 +94,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -288,6 +290,8 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
             onAllowCreateTaskChange={handleAllowCreateTaskChange} // Add this
+            showOnlyMyTasks={showOnlyMyTasks}
+            currentUserId={currentUserId}
           />
         </div>
       </div>

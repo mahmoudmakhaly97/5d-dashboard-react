@@ -18,7 +18,6 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<StarterPage />} />
-
           {/* Protected routes */}
           <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
             <Route path="/employees" element={<Employees />} />
@@ -26,11 +25,10 @@ const App = () => {
             <Route path="/clients" element={<Clients />} />
           </Route>
           <Route path="/tasks" element={<Tasks />} />
-
+          <Route path="/my-tasks" element={<Tasks myTasksView={true} />} />{' '}
           {/* <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
             <Route path="/tasks" element={<Tasks />} />
           </Route> */}
-
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CAvatar,
@@ -15,6 +15,25 @@ import avatar8 from '/assets/images/profile-user.png'
 import './index.scss'
 const AppHeaderDropdown = () => {
   const navigate = useNavigate()
+  const [userId, setUserId] = useState(null)
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('authData')
+      if (stored) {
+        const tokenObj = JSON.parse(stored)
+        const token = tokenObj.token
+
+        if (token) {
+          const base64Url = token.split('.')[1]
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const payload = JSON.parse(atob(base64))
+          setUserId(payload.id) // Assuming the token contains user id
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse token:', error)
+    }
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem('authData')
@@ -43,6 +62,10 @@ const AppHeaderDropdown = () => {
   } catch (error) {
     console.error('Failed to parse token:', error)
   }
+  const handleMyTasksClick = () => {
+    navigate('/my-tasks', { state: { fromMyTasks: true } })
+  }
+
   return (
     <CDropdown variant="nav-item d-flex align-items-center border-0">
       <span className=" fw-medium d-none d-md-inline">{userName}</span>
@@ -53,14 +76,16 @@ const AppHeaderDropdown = () => {
 
       <CDropdownMenu className="pt-0" placement="bottom-end">
         <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
-
+        <button>
+          {' '}
+          <CDropdownItem component="button" onClick={handleMyTasksClick}>
+            <CIcon icon={cilLockLocked} className="me-2" />
+            My Tasks
+          </CDropdownItem>
+        </button>
         <CDropdownItem href="#" onClick={handleLogout}>
           <CIcon icon={cilLockLocked} className="me-2" />
           Logout
-        </CDropdownItem>
-        <CDropdownItem href="#" onClick={handleLogout}>
-          <CIcon icon={cilLockLocked} className="me-2" />
-          my tasks
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>

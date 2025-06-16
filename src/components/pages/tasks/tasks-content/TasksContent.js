@@ -8,7 +8,6 @@ import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
 import { format } from 'date-fns'
 import { Tooltip } from 'reactstrap'
-
 import check from '/assets/images/check.png'
 import pending from '/assets/images/expired.png'
 import './Tasks.scss'
@@ -40,6 +39,8 @@ const TasksContent = () => {
   const authTasks = JSON.parse(localStorage.getItem('authData'))
   const Navigate = useNavigate()
   const location = useLocation()
+  const [showOnlyMyTasks, setShowOnlyMyTasks] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
   const [selectedEmployee, setSelectedEmployee] = useState(
     location.state?.employeeId
       ? {
@@ -69,6 +70,25 @@ const TasksContent = () => {
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
   const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
+
+  useEffect(() => {
+    try {
+      const authData = JSON.parse(localStorage.getItem('authData'))
+      if (authData?.token) {
+        const token = authData.token
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const payload = JSON.parse(atob(base64))
+        setCurrentUserId(payload.id) // Assuming the token contains user id
+      }
+    } catch (error) {
+      console.error('Failed to parse token:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    setShowOnlyMyTasks(location.pathname === '/my-tasks')
+  }, [location])
   const toggle = () => {
     setModal(!modal)
     if (!modal) {
@@ -89,7 +109,7 @@ const TasksContent = () => {
           'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
           {
             headers: {
-              Authorization: `Bearer  ${authTasks?.token}`,
+              Authorization: `Bearer   ${authTasks.token}`,
             },
           },
         )
@@ -120,7 +140,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer ${authTasks?.token}`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -159,7 +179,7 @@ const TasksContent = () => {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer  ${authTasks?.token}`,
+            Authorization: `Bearer   ${authTasks.token}`,
           },
           body: JSON.stringify(taskId),
         },
@@ -384,7 +404,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authTasks?.token}`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -446,7 +466,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
         {
           headers: {
-            Authorization: `Bearer ${authTasks?.token}`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -571,7 +591,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks?.token}`,
+          Authorization: `Bearer   ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -684,7 +704,26 @@ const TasksContent = () => {
       period: modifier?.toUpperCase() === 'PM' ? 'PM' : 'AM',
     }
   }
+  // Extract user info from token on component mount
+  useEffect(() => {
+    try {
+      const authData = JSON.parse(localStorage.getItem('authData'))
+      if (authData?.token) {
+        const token = authData.token
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const payload = JSON.parse(atob(base64))
+        setCurrentUserId(payload.id) // Assuming the token contains user id
+      }
+    } catch (error) {
+      console.error('Failed to parse token:', error)
+    }
+  }, [])
 
+  // Check if we're in "My Tasks" view
+  useEffect(() => {
+    setShowOnlyMyTasks(location.pathname === '/my-tasks')
+  }, [location])
   return (
     <div className="tasks-container mt-4">
       {isLoadingTeam ? (
@@ -1084,6 +1123,8 @@ const TasksContent = () => {
           onDeleteTask={handleTaskDeleted} // Note: Changed from handleDeleteTask to handleTaskDeleted
           key={refreshKey} // This will force a re-render when refreshKey changes
           onAllowCreateTaskChange={setAllowCreateTask} // Pass the setter
+          showOnlyMyTasks={showOnlyMyTasks}
+          currentUserId={currentUserId}
         />
       </div>
     </div>

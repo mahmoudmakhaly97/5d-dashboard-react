@@ -20,6 +20,8 @@ interface TaskTimelineProps {
   onEditTask: (task: Task) => void
   onDeleteTask: (task: Task) => void
   onAllowCreateTaskChange?: (allow: boolean) => void
+  showOnlyMyTasks?: boolean
+  currentUserId?: string | number
 }
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
   department,
@@ -29,6 +31,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   onEditTask,
   onDeleteTask,
   onAllowCreateTaskChange,
+  showOnlyMyTasks = false,
+  currentUserId = null,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -94,7 +98,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -143,22 +147,31 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const dateRange = getDateRange()
 
   // Filter tasks based on selected employee/department and date range
+  // In TaskTimeline component
   const getTasks = () => {
     if (!department) return []
 
+    let tasks = []
+
     if (employee) {
-      // Show ALL tasks for selected employee (not filtered by date)
-      return employee.tasks
+      tasks = employee.tasks
     } else {
-      // Show tasks for all employees in the department for today only
-      return department.employees.flatMap((emp) =>
+      tasks = department.employees.flatMap((emp) =>
         emp.tasks
           .filter((task) => isSameDay(new Date(task.date), currentDate))
           .map((task) => ({ ...task, employeeName: emp.name, employeeAvatar: emp.avatar })),
       )
     }
-  }
 
+    // Apply user filter if in "My Tasks" view
+    if (showOnlyMyTasks && currentUserId) {
+      tasks = tasks.filter(
+        (task) => task.assignedToEmployeeId?.toString() === currentUserId.toString(),
+      )
+    }
+
+    return tasks
+  }
   const tasks = getTasks()
 
   // Get employees with tasks today for department view
@@ -218,11 +231,13 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     <div className="relative w-full overflow-auto  p-4">
       <div className="flex mb-4 justify-between items-center w-full px-[20px]">
         <h2 className="text-xl font-semibold">
-          {department
-            ? employee
-              ? `${employee.name}'s Tasks`
-              : `${department.name} - Today's Tasks`
-            : 'All Tasks'}
+          {showOnlyMyTasks
+            ? 'My Tasks'
+            : department
+              ? employee
+                ? `${employee.name}'s Tasks`
+                : `${department.name} - Today's Tasks`
+              : 'All Tasks'}
         </h2>
         <div className="text-sm text-muted-foreground">
           {employee && dateRange.length > 1
