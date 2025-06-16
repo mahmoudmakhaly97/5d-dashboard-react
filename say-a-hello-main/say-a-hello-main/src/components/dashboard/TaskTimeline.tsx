@@ -82,6 +82,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const fetchData = async () => {
     try {
+      setIsLoading(true)
+      if (!authTasks?.token) {
+        throw new Error('No authentication token found')
+      }
+
       const response = await fetch(
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks?' +
           new URLSearchParams({
@@ -89,14 +94,25 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer    ${authTasks.token}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`)
+      }
       const data = await response.json()
       setTasks(data)
     } catch (err) {
-      console.error('Error fetching tasks:', err)
+      console.error('❌ Task fetch error:', err.message)
+      setError(err.message)
+
+      // Handle 403 (Forbidden) - Token invalid or no permission
+      if (err.message.includes('403')) {
+        localStorage.removeItem('authData') // Clear invalid token
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
   useEffect(() => {

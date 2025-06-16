@@ -10,9 +10,9 @@ import { format } from 'date-fns'
 import { Tooltip } from 'reactstrap'
 
 import check from '/assets/images/check.png'
+import pending from '/assets/images/expired.png'
 import './Tasks.scss'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Navigate } from 'react-router-dom'
 import TimeSelector from './TimeSelector'
 // Modify your initial state to use location state
 
@@ -89,7 +89,7 @@ const TasksContent = () => {
           'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
           {
             headers: {
-              Authorization: `Bearer   ${authTasks?.token}`,
+              Authorization: `Bearer  ${authTasks?.token}`,
             },
           },
         )
@@ -104,8 +104,6 @@ const TasksContent = () => {
         const teamMembers = Array.isArray(data) ? data : data.employees || []
         setManagerTeam(teamMembers)
       } catch (error) {
-        console.error('Failed to fetch manager team:', error)
-        setTeamError(error.message)
       } finally {
         setIsLoadingTeam(false)
       }
@@ -114,13 +112,6 @@ const TasksContent = () => {
     fetchManagerTeam()
   }, [authTasks?.token])
   // 5. Robust employee check with type safety
-  const isEmployeeUnderManager = (employeeId) => {
-    if (!employeeId || !managerTeam.length) return false
-
-    // Convert both IDs to numbers for comparison
-    const employeeIdNum = Number(employeeId)
-    return managerTeam.some((employee) => employee && Number(employee.id) === employeeIdNum)
-  }
 
   const fetchData = async () => {
     try {
@@ -129,7 +120,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer ${authTasks?.token}`,
           },
         },
       )
@@ -168,7 +159,7 @@ const TasksContent = () => {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer  ${authTasks?.token}`,
           },
           body: JSON.stringify(taskId),
         },
@@ -327,41 +318,36 @@ const TasksContent = () => {
   }
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     try {
+      // Convert time string to Egypt ISO format
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
 
-        // Handle time strings like "HH:MM AM/PM"
-        if (timeStr.includes(' ')) {
-          const [timePart, period] = timeStr.split(' ')
-          const [hoursStr, minutesStr] = timePart.split(':')
+        const [timePart, period] = timeStr.includes(' ') ? timeStr.split(' ') : [timeStr, null]
+        const [hoursStr, minutesStr = '0'] = timePart.split(':')
+        let hours = parseInt(hoursStr, 10)
+        const minutes = parseInt(minutesStr, 10)
 
-          let hours = parseInt(hoursStr, 10)
-          const minutes = parseInt(minutesStr || '0', 10)
-
-          // Convert 12-hour to 24-hour format
-          if (period === 'PM' && hours < 12) hours += 12
-          if (period === 'AM' && hours === 12) hours = 0
-
-          // Create date object with local time
-          const dateObj = new Date(date)
-          dateObj.setHours(hours, minutes, 0, 0)
-
-          // Convert to ISO string with timezone offset
-          const tzOffset = dateObj.getTimezoneOffset() * 60000
-          return new Date(dateObj.getTime() - tzOffset).toISOString()
-        }
-
-        // Handle simple "HH:MM" format
-        const [hoursStr, minutesStr] = timeStr.split(':')
-        const hours = parseInt(hoursStr, 10)
-        const minutes = parseInt(minutesStr || '0', 10)
+        // Convert 12h to 24h format
+        if (period === 'PM' && hours < 12) hours += 12
+        if (period === 'AM' && hours === 12) hours = 0
 
         const dateObj = new Date(date)
         dateObj.setHours(hours, minutes, 0, 0)
-
         const tzOffset = dateObj.getTimezoneOffset() * 60000
         return new Date(dateObj.getTime() - tzOffset).toISOString()
+      }
+
+      // Extract hour from time string (returns hour in 24h format)
+      const parseHourFromTimeString = (timeStr) => {
+        if (!timeStr) return 0
+        const [timePart, period] = timeStr.includes(' ') ? timeStr.split(' ') : [timeStr, null]
+        const [hoursStr] = timePart.split(':')
+        let hours = parseInt(hoursStr, 10)
+        if (period === 'PM' && hours < 12) hours += 12
+        if (period === 'AM' && hours === 12) hours = 0
+        return hours
       }
 
       // Validate required fields
@@ -371,6 +357,12 @@ const TasksContent = () => {
         return
       }
 
+      // Determine approval conditions
+      const taskStartHour = parseHourFromTimeString(formData.startTime)
+      const isAfter6PM = taskStartHour >= 18 // Now checking the task's start time, not current time
+      const isAccountManager = authTasks?.role === 'AccountManager'
+
+      // Prepare data
       const apiData = {
         id: 0,
         title: formData.title,
@@ -379,18 +371,20 @@ const TasksContent = () => {
         createdByEmployeeId: Number(formData.createdByEmployeeId),
         updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
-        slotCount: Math.max(1, Number(formData.slotCount)), // Ensure at least 1
+        slotCount: Math.max(1, Number(formData.slotCount)),
         startTime: convertToEgyptISOTime(formData.startTime),
         endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime) : null,
         createdAt: new Date().toISOString(),
-        clientId: formData.clientId, // Make sure this is included
+        clientId: formData.clientId,
+        needsApproval: isAccountManager && isAfter6PM,
+        status: isAccountManager && isAfter6PM ? 'Pending' : 'Approved',
       }
 
       const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/CreateTask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authTasks.token}`,
+          Authorization: `Bearer ${authTasks?.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -410,23 +404,27 @@ const TasksContent = () => {
         return
       }
 
-      // Success case
-      setModalMessage('Task created successfully')
+      // Success message depending on role and time
+      if (isAfter6PM) {
+        setModalMessage('Your request is pending and waiting for manager approval.')
+      } else {
+        console.log('✅ Task created and approved')
+        setModalMessage('Task created successfully.')
+      }
+
       setModalMessageVisible(true)
       toggle()
       setTaskCreated(true)
 
-      // Refresh the dashboard
       if (dashboardRef.current) {
         dashboardRef.current.refresh()
       }
+
       resetFormData()
       await fetchData()
     } catch (error) {
       console.error('Error submitting task:', error)
-      setTooltipMessage(
-        'Oops! This time slot overlaps with an existing task. Please choose a different time.',
-      )
+      setTooltipMessage('Oops! Something went wrong. Please try again.')
       setTooltipOpen(true)
       setTimeout(() => setTooltipOpen(false), 4000)
     }
@@ -448,8 +446,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authTasks?.token}`,
           },
         },
       )
@@ -574,7 +571,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  ${authTasks?.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -933,6 +930,24 @@ const TasksContent = () => {
           </div>
         </ModalMaker>
       )}
+      {modalMessageVisible &&
+        modalMessage === 'Your request is pending and waiting for manager approval.' && (
+          <ModalMaker
+            size="md"
+            modal={modalMessageVisible}
+            toggle={() => setModalMessageVisible(false)}
+            centered
+          >
+            <div className="d-flex flex-column justify-content-center align-items-center gap-3 p-4">
+              <img src={pending} width={70} height={70} alt="success" />
+              <h4 className="text-center">{modalMessage}</h4>
+              <Button color="primary" onClick={() => setModalMessageVisible(false)}>
+                OK{' '}
+              </Button>
+            </div>
+          </ModalMaker>
+        )}
+
       <ModalMaker modal={deleteModal} toggle={toggleDeleteModal} centered size="md">
         <div className="p-4 text-center">
           <h4>Are you sure you want to delete this task?</h4>

@@ -1,8 +1,7 @@
 /* eslint-disable prettier/prettier */
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Input, Modal, ModalBody, ModalHeader } from 'reactstrap'
-import { QRCodeSVG } from 'qrcode.react'
+import { Card } from 'reactstrap'
 import axios from 'axios'
 import './starter-page.scss'
 import { ModalMaker } from '../../ui'
@@ -10,35 +9,60 @@ import { useAuth } from '../../../context/AuthContext'
 
 const StarterPage = () => {
   const navigate = useNavigate()
-  const [qrModal, setQrModal] = useState(false)
-  const [qrUid, setQrUid] = useState('')
+  const [emailModal, setEmailModal] = useState(false)
+  const [toggleInputs, setToggleInputs] = useState(true)
   const [otp, setOtp] = useState('')
+  const [email, setEmail] = useState('')
+  const [uuid, setUuid] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { loginAsEmployee } = useAuth()
 
-  const handleEmployeeClick = async () => {
+  // Configure axios to use the token from localStorage for all requests
+  axios.interceptors.request.use(
+    (config) => {
+      const authData = localStorage.getItem('authData')
+      if (authData) {
+        const { token } = JSON.parse(authData)
+        config.headers.Authorization = `Bearer ${token}`
+      }
+      return config
+    },
+    (error) => {
+      return Promise.reject(error)
+    },
+  )
+
+  const sendOtpEmail = async (email) => {
+    if (!email || email.trim() === '') {
+      setError('Please enter your email.')
+      return
+    }
+
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.post('http://attendance-service.5d-dev.com/api/QRLogin/qr/start')
-      setQrUid(response.data.uid)
-      setIsLoading(false)
-      setQrModal(true)
+      const response = await axios.post(
+        'http://attendance-service.5d-dev.com/api/QRLogin/qr/send-otp-email',
+        { email },
+        { headers: { 'Content-Type': 'application/json' } },
+      )
 
-      setTimeout(() => {
-        if (qrModal) {
-          setQrModal(false)
-          setOtpModal(true)
-        }
-      }, 30000)
+      if (response.data.message === 'OTP sent successfully') {
+        setUuid(response.data.uid)
+        setToggleInputs(false)
+      } else {
+        setError(response.data.message || 'Failed to send OTP. Please try again.')
+      }
     } catch (err) {
-      console.error('Error generating QR code:', err)
-      setError('Failed to generate QR code. Please try again.')
+      console.error('❌ OTP sending error:', err.response?.data || err.message)
+      setError(err.response?.data?.message || 'this email does not exist')
+    } finally {
       setIsLoading(false)
     }
   }
-  const verifyUuid = async (uuid) => {
+
+  const verifyUuid = async () => {
     if (!otp || otp.trim() === '') {
       setError('Please enter the OTP.')
       return
@@ -53,17 +77,24 @@ const StarterPage = () => {
         { headers: { 'Content-Type': 'application/json' } },
       )
 
-      // Assuming response includes a token or useful data
       if (response.data.token || response.data.success === true) {
-        localStorage.setItem(
-          'authData',
-          JSON.stringify({
-            token: response.data.token || 'default-employee-token',
-            role: 'employee',
-          }),
-        )
+        const authData = {
+          token: response.data.token,
+          role: 'employee',
+          // You can add more user data here if needed
+          user: response.data.user || null,
+        }
 
-        loginAsEmployee(response.data.token || 'default-employee-token')
+        // Save to localStorage
+        localStorage.setItem('authData', JSON.stringify(authData))
+
+        // Set axios default headers
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+
+        // Update auth context
+        loginAsEmployee(response.data.token)
+
+        // Navigate to tasks
         navigate('/tasks')
       } else {
         setError(
@@ -78,17 +109,15 @@ const StarterPage = () => {
     }
   }
 
-  // Fix the timeout issue:
-  useEffect(() => {
-    let timer
-    if (qrModal) {
-      timer = setTimeout(() => {
-        setQrModal(false)
-        setError('QR code expired. Please generate a new one.')
-      }, 30000)
-    }
-    return () => clearTimeout(timer)
-  }, [qrModal])
+  const handleSubmitEmail = async (e) => {
+    e.preventDefault()
+    await sendOtpEmail(email)
+  }
+
+  const handleLogin = (e) => {
+    e.preventDefault()
+    verifyUuid()
+  }
 
   return (
     <div className="d-flex justify-content-center align-items-center min-vh-100 starter-page gap-3">
@@ -97,8 +126,7 @@ const StarterPage = () => {
         <div className="d-flex gap-4">
           <Card
             className="p-4 rounded-4 cursor-pointer d-flex flex-column align-items-center justify-content-center bg-white border-0"
-            onClick={handleEmployeeClick}
-            // onClick={() => navigate('/tasks')}
+            onClick={() => setEmailModal(true)}
           >
             <img src="./assets/images/employees.svg" className="employees-img" alt="employees" />
             <img
@@ -119,34 +147,40 @@ const StarterPage = () => {
         </div>
       </div>
 
-      {/* QR Code Modal */}
-      <ModalMaker modal={qrModal} toggle={() => setQrModal(false)} size="md">
-        {qrUid && (
-          <div className="d-flex flex-column align-items-center">
-            <QRCodeSVG value={qrUid} size={200} level="H" includeMargin={true} />
-            <Input
-              type="text"
-              placeholder="Enter OTP received on your device"
-              value={otp}
-              onChange={(e) => {
-                setOtp(e.target.value)
-                setError('')
-              }}
+      {/* Email and OTP Modal */}
+      <ModalMaker modal={emailModal} toggle={() => setEmailModal(false)} size="md">
+        {toggleInputs ? (
+          <form onSubmit={handleSubmitEmail}>
+            <input
+              className="form-control"
+              type="email"
+              placeholder="Enter Your Email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            {error && <p className="text-danger mt-2 me-auto text-start">{error}</p>}
-
-            <Button
-              className="mt-3"
-              color="primary"
-              onClick={() => verifyUuid(qrUid)} // FIXED
-              block
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
-            </Button>
-            <p className="mt-3">Scan this QR code with your mobile app</p>
-            <p className="text-muted small">We'll then generate an OTP for verification</p>
-          </div>
+            {error && <div className="text-danger mt-2">{error}</div>}
+            <button type="submit" className="btn btn-primary mt-2" disabled={isLoading}>
+              {isLoading ? 'Sending...' : 'Submit'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin}>
+            <p className="mb-2">
+              ✅ We've sent an OTP code to your email. <strong>Enter it below</strong>
+            </p>
+            <input
+              className="form-control"
+              type="text"
+              placeholder="Enter Your OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+            {error && <div className="text-danger mt-2">{error}</div>}
+            <button type="submit" className="btn btn-primary mt-2" disabled={isLoading}>
+              {isLoading ? 'Verifying...' : 'Login'}
+            </button>
+          </form>
         )}
       </ModalMaker>
     </div>

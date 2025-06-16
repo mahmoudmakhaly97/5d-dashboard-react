@@ -92,7 +92,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer    ${authTasks.token}`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         },
       )

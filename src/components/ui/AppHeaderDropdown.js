@@ -22,24 +22,30 @@ const AppHeaderDropdown = () => {
     sessionStorage.removeItem('authToken')
     navigate('/login')
   }
-
+  console.log('Decoded token payload:', localStorage.getItem('authData'))
   // Extract user email from JWT token
-  let userEmail = 'Unknown User'
+  let userName = 'Unknown User'
   try {
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+    const stored = localStorage.getItem('authData') || sessionStorage.getItem('authData')
+    const tokenObj = JSON.parse(stored)
+    const token = tokenObj.token
+
     if (token) {
       const base64Url = token.split('.')[1]
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
       const payload = JSON.parse(atob(base64))
-      userEmail = payload.email || userEmail
+      console.log('Decoded token payload:', payload)
+      const email = payload.email
+      if (email) {
+        userName = email.split('@')[0]
+      }
     }
   } catch (error) {
     console.error('Failed to parse token:', error)
   }
-
   return (
     <CDropdown variant="nav-item d-flex align-items-center border-0">
-      <span className=" fw-medium d-none d-md-inline">{userEmail.split('@')[0]}</span>
+      <span className=" fw-medium d-none d-md-inline">{userName}</span>
 
       <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
         <CAvatar src={avatar8} size="md" />
@@ -51,6 +57,10 @@ const AppHeaderDropdown = () => {
         <CDropdownItem href="#" onClick={handleLogout}>
           <CIcon icon={cilLockLocked} className="me-2" />
           Logout
+        </CDropdownItem>
+        <CDropdownItem href="#" onClick={handleLogout}>
+          <CIcon icon={cilLockLocked} className="me-2" />
+          my tasks
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
