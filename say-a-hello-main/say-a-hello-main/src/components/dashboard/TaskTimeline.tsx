@@ -266,7 +266,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         </div>
       )}
       {/* Only show buttons when in weekly view */}
-      {employee && dateRange.length > 1 && (
+      {(employee && dateRange.length > 1) || showOnlyMyTasks ? (
         <div className="flex gap-2 ml-4 my-4 justify-between btn-tasks-container">
           <div className="relative group mr-2">
             <Button
@@ -301,8 +301,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
             </p>
           </div>
         </div>
-      )}
-
+      ) : null}
       {tasks.length > 0 ? (
         <div className="relative min-h-[600px]">
           {/* Day headers for week view */}
