@@ -109,7 +109,7 @@ const TasksContent = () => {
           'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
           {
             headers: {
-              Authorization: `Bearer   ${authTasks.token}`,
+              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
             },
           },
         )
@@ -119,11 +119,13 @@ const TasksContent = () => {
         }
 
         const data = await response.json()
+        console.log('Manager Team Data:', data) // Debug log
 
-        // 4. Handle potential nested data (adjust based on actual response)
         const teamMembers = Array.isArray(data) ? data : data.employees || []
+        console.log('Team Members:', teamMembers) // Debug log
         setManagerTeam(teamMembers)
       } catch (error) {
+        console.error('Error fetching manager team:', error)
       } finally {
         setIsLoadingTeam(false)
       }
@@ -140,7 +142,7 @@ const TasksContent = () => {
         'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
           },
         },
       )
@@ -179,7 +181,7 @@ const TasksContent = () => {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            Authorization: `Bearer   ${authTasks.token}`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
           },
           body: JSON.stringify(taskId),
         },
@@ -380,8 +382,10 @@ const TasksContent = () => {
       // Determine approval conditions
       const taskStartHour = parseHourFromTimeString(formData.startTime)
       const isAfter6PM = taskStartHour >= 18 // Now checking the task's start time, not current time
-      const isAccountManager = authTasks?.role === 'AccountManager'
-
+      const isAccountManager = () => {
+        const authData = JSON.parse(localStorage.getItem('authData'))
+        return authData?.role === 'AccountManager' || authData?.role === 'Account Manager'
+      }
       // Prepare data
       const apiData = {
         id: 0,
@@ -404,7 +408,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
         },
         body: JSON.stringify(apiData),
       })
@@ -466,7 +470,7 @@ const TasksContent = () => {
         `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
           },
         },
       )
@@ -591,7 +595,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
         },
         body: JSON.stringify(apiData),
       })
@@ -724,18 +728,31 @@ const TasksContent = () => {
   useEffect(() => {
     setShowOnlyMyTasks(location.pathname === '/my-tasks')
   }, [location])
+  const isEmployeeInManagerTeam = (employeeId) => {
+    // If user is Account Manager, they can add tasks for anyone
+    if (authTasks?.role === 'Account Manager') {
+      return true
+    }
+
+    if (!employeeId || !managerTeam || managerTeam.length === 0) {
+      return false
+    }
+    // Convert both IDs to strings for comparison to avoid type issues
+    return managerTeam.some((teamMember) => String(teamMember.id) === String(employeeId))
+  }
+
   return (
     <div className="tasks-container mt-4">
-      {isLoadingTeam ? (
-        <div>Loading team data...</div>
-      ) : teamError ? (
-        <div className="text-danger">Error loading team: {teamError}</div>
-      ) : selectedEmployee?.id && selectedEmployee?.name && allowCreateTask ? (
-        <Button color="primary" onClick={toggle} className="add-task">
-          Add Task for {selectedEmployee.name}
-        </Button>
-      ) : (
-        selectedEmployee?.name && (
+      {selectedEmployee?.id && selectedEmployee?.name ? (
+        authTasks?.role === 'Account Manager' ? (
+          <Button color="primary" onClick={toggle} className="add-task">
+            Add Task for {selectedEmployee.name}
+          </Button>
+        ) : isEmployeeInManagerTeam(selectedEmployee.id) ? (
+          <Button color="primary" onClick={toggle} className="add-task">
+            Add Task for {selectedEmployee.name}
+          </Button>
+        ) : (
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
               id="disabledButtonWrapper"
@@ -748,15 +765,16 @@ const TasksContent = () => {
                 Add Task for {selectedEmployee?.name}
               </Button>
             </span>
-
             <UncontrolledTooltip target="disabledButtonWrapper" placement="top">
-              {allowCreateTask
-                ? ' You are not allowed to add a task to this employee.'
-                : ' Cannot create tasks in past weeks.'}{' '}
+              {authTasks?.role === 'AccountManager'
+                ? 'Account Managers can add tasks for any employee'
+                : managerTeam.length === 0
+                  ? 'Loading team information...'
+                  : 'You can only add tasks for members of your team'}
             </UncontrolledTooltip>
           </div>
         )
-      )}
+      ) : null}
 
       <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
         <Row>

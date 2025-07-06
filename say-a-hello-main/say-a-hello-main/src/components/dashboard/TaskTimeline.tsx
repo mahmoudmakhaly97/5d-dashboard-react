@@ -98,18 +98,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
-          },
-        },
-      )
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`)
-      }
-      const data = await response.json()
-      setTasks(data)
-    } catch (err) {
-      console.error('❌ Task fetch error:', err.message)
-      setError(err.message)
+            Authorization: `Bearer  ${authTasks.token}sage)
 
       // Handle 403 (Forbidden) - Token invalid or no permission
       if (err.message.includes('403')) {

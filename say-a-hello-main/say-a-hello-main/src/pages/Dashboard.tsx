@@ -94,17 +94,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
-          },
-        },
-      )
-      const tasksData = await tasksResponse.json()
-
-      // Process data and create department structure
-      const processedDepartments = await Promise.all(
-        departmentsData.map(async (dept: any) => {
-          // Fetch employees for this department
-          const employeesResponse = await fetch(
+            Authorization: `Bearer  ${authTasks.token}          const employeesResponse = await fetch(
             `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
           )
           const employeesData = await employeesResponse.json()
