@@ -50,9 +50,10 @@ interface DashboardProps {
   onAllowCreateTaskChange?: (allow: boolean) => void
   showOnlyMyTasks?: boolean
   currentUserId?: string
+  managerTeam?: any[] // Add this line
 }
 const Dashboard = forwardRef((props: DashboardProps, ref) => {
-  const { onEditTask, onDeleteTask, showOnlyMyTasks, currentUserId } = props
+  const { onEditTask, onDeleteTask, showOnlyMyTasks, currentUserId, managerTeam } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -94,7 +95,17 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}          const employeesResponse = await fetch(
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
+          },
+        },
+      )
+      const tasksData = await tasksResponse.json()
+
+      // Process data and create department structure
+      const processedDepartments = await Promise.all(
+        departmentsData.map(async (dept: any) => {
+          // Fetch employees for this department
+          const employeesResponse = await fetch(
             `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
           )
           const employeesData = await employeesResponse.json()
@@ -242,28 +253,48 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="pl-2 space-y-1">
-                      {department.employees.map((employee) => (
-                        <div
-                          key={employee.id}
-                          className={`flex items-center p-2 rounded-md cursor-pointer hover:bg-slate-200 hover:text-accent-foreground ${
-                            selectedEmployee?.id === employee.id
-                              ? 'bg-accent text-accent-foreground'
-                              : ''
-                          }`}
-                          onClick={() => handleEmployeeSelect(department, employee)}
-                        >
-                          <Avatar className="h-6 w-6 mr-2">
-                            <AvatarImage src={employee.avatar} alt={employee.name} />
-                            <AvatarFallback>
-                              <img src="https://placehold.co/30x30" alt={employee.name} />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="truncate">
-                            <div className="font-medium">{employee.name}</div>
-                            <div className="text-xs text-muted-foreground">{employee.position}</div>
+                      {department.employees.map((employee) => {
+                        const isInManagerTeam = props.managerTeam?.some(
+                          (member) => member.id === employee.id,
+                        )
+
+                        return (
+                          <div
+                            key={employee.id}
+                            className={`flex items-center p-2 rounded-md cursor-pointer hover:bg-slate-200 hover:text-accent-foreground ${
+                              selectedEmployee?.id === employee.id
+                                ? 'bg-accent text-accent-foreground'
+                                : ''
+                            } ${props.managerTeam && !isInManagerTeam ? 'opacity-50' : ''}`}
+                            onClick={() => {
+                              if (!props.managerTeam || isInManagerTeam) {
+                                handleEmployeeSelect(department, employee)
+                              }
+                            }}
+                          >
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={employee.avatar} alt={employee.name} />
+                              <AvatarFallback>
+                                <img src="https://placehold.co/30x30" alt={employee.name} />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="truncate">
+                              <div className="font-medium">{employee.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {employee.position}
+                              </div>
+                            </div>
+                            {/* {props.managerTeam && !isInManagerTeam && (
+                              <UncontrolledTooltip
+                                target={`employee-${employee.id}`}
+                                placement="right"
+                              >
+                                You can only assign tasks to your team members
+                              </UncontrolledTooltip>
+                            )} */}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -279,9 +310,10 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
             onDateSelect={(date) => setCurrentDate(date)}
             onEditTask={onEditTask}
             onDeleteTask={onDeleteTask}
-            onAllowCreateTaskChange={handleAllowCreateTaskChange} // Add this
+            onAllowCreateTaskChange={handleAllowCreateTaskChange}
             showOnlyMyTasks={showOnlyMyTasks}
             currentUserId={currentUserId}
+            managerTeam={managerTeam} // Pass the manager's team
           />
         </div>
       </div>

@@ -23,6 +23,7 @@ interface TaskTimelineProps {
   showOnlyMyTasks?: boolean
   currentUserId?: string | number
 }
+
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
   department,
   employee,
@@ -52,13 +53,15 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const handleNextWeek = () => {
     setCurrentWeekOffset((prev) => prev + 1)
     setAllowCreateTask(true)
-    onAllowCreateTaskChange?.(true) // Notify parent
+    onAllowCreateTaskChange?.(true)
   }
+
   const handlePrevWeek = () => {
     setCurrentWeekOffset((prev) => prev - 1)
     setAllowCreateTask(false)
-    onAllowCreateTaskChange?.(false) // Notify parent
+    onAllowCreateTaskChange?.(false)
   }
+
   const handleCurrentWeek = () => {
     setCurrentWeekOffset(0)
     setAllowCreateTask(true)
@@ -73,12 +76,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     return () => clearInterval(interval)
   }, [])
+
   const handleDayClick = (date: Date) => {
     setSelectedDate(date)
     if (onDateSelect) {
       onDateSelect(date)
     }
   }
+
   const handleDeleteClick = (task: Task) => {
     setSelectedTaskToDelete(task)
     setShowDeleteModal(true)
@@ -98,30 +103,41 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}sage)
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
+          },
+        },
+      )
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`)
+      }
+      const data = await response.json()
+      setTasks(data)
+    } catch (err) {
+      console.error('❌ Task fetch error:', err.message)
+      setError(err.message)
 
-      // Handle 403 (Forbidden) - Token invalid or no permission
       if (err.message.includes('403')) {
-        localStorage.removeItem('authData') // Clear invalid token
+        localStorage.removeItem('authData')
       }
     } finally {
       setIsLoading(false)
     }
   }
+
   useEffect(() => {
     fetchData()
-  }, []) // Empty array means this runs only once when the component mounts
+  }, [])
+
   const isBefore10AM = (task: Task) => {
     const taskDate = new Date(task.date)
-    const taskTime = new Date(task.createdAt || task.date) // Use createdAt if available, otherwise fall back to task.date
+    const taskTime = new Date(task.createdAt || task.date)
     return taskTime.getHours() < 10
   }
-  // Get the date range - today only or full week based on selection
+
   const getDateRange = () => {
     if (!department) return [currentDate]
 
     if (employee) {
-      // For an employee, show the full week with offset
       const weekStart = startOfWeek(addWeeks(currentDate, currentWeekOffset))
       const weekEnd = endOfWeek(addWeeks(currentDate, currentWeekOffset))
       return eachDayOfInterval({
@@ -129,30 +145,28 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         end: weekEnd,
       })
     } else {
-      // For all employees in department, just show today
       return [currentDate]
     }
   }
+
   const dateRange = getDateRange()
 
-  // Filter tasks based on selected employee/department and date range
-  // In TaskTimeline component
   const getTasks = () => {
     if (!department) return []
 
     let tasks = []
 
     if (employee) {
-      tasks = employee.tasks
+      tasks = employee.tasks || []
     } else {
-      tasks = department.employees.flatMap((emp) =>
-        emp.tasks
-          .filter((task) => isSameDay(new Date(task.date), currentDate))
-          .map((task) => ({ ...task, employeeName: emp.name, employeeAvatar: emp.avatar })),
-      )
+      tasks =
+        department.employees?.flatMap((emp) =>
+          (emp.tasks || [])
+            .filter((task) => isSameDay(new Date(task.date), currentDate))
+            .map((task) => ({ ...task, employeeName: emp.name, employeeAvatar: emp.avatar })),
+        ) || []
     }
 
-    // Apply user filter if in "My Tasks" view
     if (showOnlyMyTasks && currentUserId) {
       tasks = tasks.filter(
         (task) => task.assignedToEmployeeId?.toString() === currentUserId.toString(),
@@ -161,19 +175,18 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     return tasks
   }
+
   const tasks = getTasks()
 
-  // Get employees with tasks today for department view
   const getEmployeesWithTasksToday = () => {
     if (!department || employee) return []
-    return department.employees.filter((emp) =>
-      emp.tasks.some((task) => isSameDay(new Date(task.date), currentDate)),
-    )
+    return department.employees || []
   }
+
   const employeesWithTasksToday = getEmployeesWithTasksToday()
 
-  // Calculate hours for the timeline (6:00 AM - 6:00 PM)
   const hours = Array.from({ length: 9 }, (_, i) => i + 10)
+
   const calculateTaskPosition = (task: Task) => {
     const timeParts = task.time.split(':')
     const hour = parseInt(timeParts[0])
@@ -198,16 +211,13 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     return { top: topPosition, height: heightInMinutes }
   }
-  // Get title based on selection
 
-  // Calculate stopwatch position
   const calculateStopwatchPosition = () => {
-    const startHour = 10 // Calendar starts at 10 AM
-    const hourHeight = 96 // Each hour is 96px tall
+    const startHour = 10
+    const hourHeight = 96
     const currentHour = currentTime.getHours()
     const currentMinute = currentTime.getMinutes()
 
-    // Calculate total minutes from start of day (10 AM)
     const totalMinutes = currentHour * 60 + currentMinute - startHour * 60
     const pixelsPerMinute = hourHeight / 60
 
@@ -217,7 +227,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const stopwatchPosition = calculateStopwatchPosition()
 
   return (
-    <div className="relative w-full overflow-auto  p-4">
+    <div className="relative w-full overflow-auto p-4">
       <div className="flex mb-4 justify-between items-center w-full px-[20px]">
         <h2 className="text-xl font-semibold">
           {showOnlyMyTasks
@@ -234,12 +244,13 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
             : format(currentDate, 'EEEE, MMMM d, yyyy')}
         </div>
       </div>
-      {!employee && department && employeesWithTasksToday.length > 0 && (
+
+      {!employee && department && department.employees && employeesWithTasksToday.length > 0 && (
         <div className="flex border-b mb-2">
-          {employeesWithTasksToday.map((emp) => (
+          {department.employees.map((emp) => (
             <div
               key={emp.id}
-              className="flex-1 p-2 text-center font-medium cursor-pointer   relative left-[50px] max-w-[231px]"
+              className="flex-1 p-2 text-center font-medium cursor-pointer relative left-[50px] max-w-[231px]"
             >
               <div className="flex items-center justify-center space-x-2">
                 <Avatar className="h-6 w-6">
@@ -254,7 +265,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           ))}
         </div>
       )}
-      {/* Only show buttons when in weekly view */}
+
+      {/* Show buttons when in weekly view */}
       {(employee && dateRange.length > 1) || showOnlyMyTasks ? (
         <div className="flex gap-2 ml-4 my-4 justify-between btn-tasks-container">
           <div className="relative group mr-2">
@@ -272,7 +284,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           {currentWeekOffset !== 0 && (
             <Button
               onClick={handleCurrentWeek}
-              className="bg-gray-600 px-4 py-2 rounded text-sm current "
+              className="bg-gray-600 px-4 py-2 rounded text-sm current"
             >
               Current Week
             </Button>
@@ -285,70 +297,71 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
             >
               <ChevronRight />
             </Button>
-            <p className="absolute -top-8 right-[0px] w-[120px] text-center  px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <p className="absolute -top-8 right-[0px] w-[120px] text-center px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               Next week
             </p>
           </div>
         </div>
       ) : null}
-      {tasks.length > 0 ? (
-        <div className="relative min-h-[600px]">
-          {/* Day headers for week view */}
-          {employee && dateRange.length > 1 && (
-            <div className="flex border-b mb-2">
-              {dateRange.map((date, index) => (
-                <div
-                  key={index}
-                  className={`flex-1 p-2  text-center font-medium cursor-pointer   relative left-[50px] max-w-[230px] ${
-                    (selectedDate ? isSameDay(selectedDate, date) : isToday(date))
-                      ? 'bg-primary/10 rounded-t-md'
-                      : ''
-                  }`}
-                  onClick={() => handleDayClick(date)}
-                >
-                  {format(date, 'EEE, MMM d')}
-                </div>
-              ))}
-            </div>
-          )}
 
-          {/* Hour lines with increased height */}
-          <div className="relative">
-            {hours.map((hour) => (
-              <div key={hour} className="flex border-t border-gray-200 h-24">
-                <div className="w-16 text-xs text-gray-500 py-1 pr-2 text-right">
-                  {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                </div>
-                <div className="flex-1"></div>
+      {/* Always show timeline structure - removed the tasks.length > 0 condition */}
+      <div className="relative min-h-[600px]">
+        {/* Day headers for week view */}
+        {employee && dateRange.length > 1 && (
+          <div className="flex border-b mb-2">
+            {dateRange.map((date, index) => (
+              <div
+                key={index}
+                className={`flex-1 p-2 text-center font-medium cursor-pointer relative left-[50px] max-w-[230px] ${
+                  (selectedDate ? isSameDay(selectedDate, date) : isToday(date))
+                    ? 'bg-primary/10 rounded-t-md'
+                    : ''
+                }`}
+                onClick={() => handleDayClick(date)}
+              >
+                {format(date, 'EEE, MMM d')}
               </div>
             ))}
+          </div>
+        )}
 
-            {/* Current time indicator (red line) */}
-            <div
-              className="absolute left-0 right-0 border-t-2 border-red-500 z-10 flex items-center"
-              style={{
-                top: `${stopwatchPosition}px`,
-                marginTop: '-1px',
-              }}
-            >
-              <div className="absolute -left-4 -top-3">
-                <Stopwatch color="#ea384c" />
+        {/* Hour lines with increased height */}
+        <div className="relative">
+          {hours.map((hour) => (
+            <div key={hour} className="flex border-t border-gray-200 h-24">
+              <div className="w-16 text-xs text-gray-500 py-1 pr-2 text-right">
+                {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
               </div>
+              <div className="flex-1"></div>
             </div>
+          ))}
 
-            {/* Tasks */}
-            <div className="absolute top-0 left-16 right-0 bottom-0">
-              {employee && dateRange.length > 1 ? (
-                // Week view layout
-                <div className="flex h-full ">
-                  {dateRange.map((date, dateIndex) => (
-                    <div key={dateIndex} className="flex-1 relative h-full  days  ">
-                      {tasks
+          {/* Current time indicator (red line) - Always show */}
+          <div
+            className="absolute left-0 right-0 border-t-2 border-red-500 z-10 flex items-center"
+            style={{
+              top: `${stopwatchPosition}px`,
+              marginTop: '-1px',
+            }}
+          >
+            <div className="absolute -left-4 -top-3">
+              <Stopwatch color="#ea384c" />
+            </div>
+          </div>
+
+          {/* Tasks - Show tasks if they exist, otherwise show empty timeline */}
+          <div className="absolute top-0 left-16 right-0 bottom-0">
+            {employee && dateRange.length > 1 ? (
+              // Week view layout
+              <div className="flex h-full">
+                {dateRange.map((date, dateIndex) => (
+                  <div key={dateIndex} className="flex-1 relative h-full days">
+                    {tasks.length > 0 ? (
+                      tasks
                         .filter(
                           (task) => isSameDay(new Date(task.date), date) && !isBefore10AM(task),
                         )
                         .map((task, taskIndex) => {
-                          // Calculate position based on time
                           const timeParts = task.time.split(':')
                           const hour = parseInt(timeParts[0])
                           const minute = parseInt(timeParts[1]?.split(' ')[0] || '0')
@@ -357,8 +370,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                           const hourIn24 = isPM && hour !== 12 ? hour + 12 : hour
                           const topPosition = (hourIn24 - 10) * 96 + minute
 
-                          // Calculate height based on duration
-                          let heightInMinutes = 60 // Default 1 hour
+                          let heightInMinutes = 60
                           if (task.endTime) {
                             const endTimeParts = task.endTime.split(':')
                             const endHour = parseInt(endTimeParts[0])
@@ -374,10 +386,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                           return (
                             <div
                               key={taskIndex}
-                              className="absolute mx-1 group TaskCard" // <-- Added `group` here
+                              className="absolute mx-1 group TaskCard"
                               style={{
                                 top: `${topPosition}px`,
-
                                 height: `${heightInMinutes}px`,
                                 minHeight: '40px',
                                 maxHeight: '200px',
@@ -397,92 +408,114 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                 size={19}
                                 className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={() => handleDeleteClick(task)}
-
-                                // ...........No
                               />
                               <Pencil
                                 size={19}
-                                className="absolute  top-10 right-3  cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 onClick={() => onEditTask(task)}
                               />
                             </div>
                           )
-                        })}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // Day view layout - now used for both single employee day view and department view
-                <div className="w-full h-full ">
-                  <div className="relative h-full w-full ">
-                    <div className="flex">
-                      {employeesWithTasksToday.map((emp) => (
+                        })
+                    ) : (
+                      // Show empty day with message
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-muted-foreground text-sm">No tasks</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Day view layout
+              <div className="w-full h-full">
+                <div className="relative h-full w-full">
+                  <div className="flex">
+                    {department && department.employees ? (
+                      department.employees.map((emp) => (
                         <div
                           key={emp.id}
-                          className="flex-1 relative min-w-[200px] max-w-[250px]  last:border-r-0"
+                          className="flex-1 relative min-w-[200px] max-w-[250px] last:border-r-0"
                         >
-                          <div className="  h-[95vh]  today-border">
-                            {emp.tasks
-                              .filter(
-                                (task) =>
-                                  isSameDay(new Date(task.date), currentDate) &&
-                                  !isBefore10AM(task),
-                              )
-                              .map((task, taskIndex) => {
-                                const { top, height } = calculateTaskPosition(task)
-                                return (
-                                  <div
-                                    key={taskIndex}
-                                    className="absolute mx-1 group TaskCard "
-                                    style={{
-                                      top: `${top}px`,
-                                      height: `${height}px`,
-                                      minHeight: '40px',
-                                      maxHeight: '200px',
-                                      width: 'calc(100% - 8px)',
-
-                                      maxWidth: '190px',
-                                      left: '0px',
-                                    }}
-                                  >
-                                    <TaskCard
-                                      task={task}
-                                      employee={{
-                                        name: emp.name,
-                                        avatar: emp.avatar,
-                                      }}
-                                    />
-                                    <Trash2
-                                      size={19}
-                                      className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                      onClick={() => handleDeleteClick(task)}
-                                    />
-                                    <Pencil
-                                      size={19}
-                                      className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                      onClick={() => onEditTask(task)}
-                                    />
-                                  </div>
+                          <div className="h-[95vh] today-border">
+                            {(emp.tasks || []).filter(
+                              (task) =>
+                                isSameDay(new Date(task.date), currentDate) && !isBefore10AM(task),
+                            ).length > 0 ? (
+                              (emp.tasks || [])
+                                .filter(
+                                  (task) =>
+                                    isSameDay(new Date(task.date), currentDate) &&
+                                    !isBefore10AM(task),
                                 )
-                              })}
+                                .map((task, taskIndex) => {
+                                  const { top, height } = calculateTaskPosition(task)
+                                  return (
+                                    <div
+                                      key={taskIndex}
+                                      className="absolute mx-1 group TaskCard"
+                                      style={{
+                                        top: `${top}px`,
+                                        height: `${height}px`,
+                                        minHeight: '40px',
+                                        maxHeight: '200px',
+                                        width: 'calc(100% - 8px)',
+                                        maxWidth: '190px',
+                                        left: '0px',
+                                      }}
+                                    >
+                                      <TaskCard
+                                        task={task}
+                                        employee={{
+                                          name: emp.name,
+                                          avatar: emp.avatar,
+                                        }}
+                                      />
+                                      <Trash2
+                                        size={19}
+                                        className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                        onClick={() => handleDeleteClick(task)}
+                                      />
+                                      <Pencil
+                                        size={19}
+                                        className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                        onClick={() => onEditTask(task)}
+                                      />
+                                    </div>
+                                  )
+                                })
+                            ) : (
+                              <div className="flex items-center justify-center h-full">
+                                <div className="text-center text-muted-foreground text-sm">
+                                  No tasks today
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center h-full w-full">
+                        <div className="text-center text-muted-foreground">
+                          No department data available
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div className="flex items-center justify-center h-64 text-muted-foreground  ">
-          <p className="text-start  w-1/2  ">
-            {' '}
-            No tasks scheduled for {employee && dateRange.length > 1 ? 'this week' : 'today'}
-          </p>
+      </div>
+
+      {/* Show message only when there are no tasks AND no employee selected */}
+      {tasks.length === 0 && !employee && (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          <p className="text-start w-1/2">No tasks scheduled for today</p>
         </div>
       )}
+
       {selectedTaskToDelete && (
         <ConfirmDeleteModal
           open={showDeleteModal}
