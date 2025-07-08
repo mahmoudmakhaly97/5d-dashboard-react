@@ -62,6 +62,7 @@ const StarterPage = () => {
     }
   }
 
+  // In your verifyUuid function in StarterPage.js
   const verifyUuid = async () => {
     if (!otp || otp.trim() === '') {
       setError('Please enter the OTP.')
@@ -78,15 +79,17 @@ const StarterPage = () => {
       )
 
       if (response.data.token || response.data.success === true) {
-        const authData = {
+        const authTasks = {
           token: response.data.token,
           role: 'employee',
-          // You can add more user data here if needed
-          user: response.data.user || null,
+          user: {
+            name: response.data.user?.name || email.split('@')[0], // Use name from response or email prefix
+            email: email,
+          },
         }
 
-        // Save to localStorage
-        localStorage.setItem('authData', JSON.stringify(authData))
+        // Save to localStorage as authTasks
+        localStorage.setItem('authTasks', JSON.stringify(authTasks))
 
         // Set axios default headers
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`

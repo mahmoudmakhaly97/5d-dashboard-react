@@ -734,10 +734,16 @@ const TasksContent = () => {
       return true
     }
 
+    // Allow users to add tasks for themselves
+    if (currentUserId && String(employeeId) === String(currentUserId)) {
+      return true
+    }
+
     if (!employeeId || !managerTeam || managerTeam.length === 0) {
       return false
     }
-    // Convert both IDs to strings for comparison to avoid type issues
+
+    // Check if employee is in manager's team
     return managerTeam.some((teamMember) => String(teamMember.id) === String(employeeId))
   }
 
