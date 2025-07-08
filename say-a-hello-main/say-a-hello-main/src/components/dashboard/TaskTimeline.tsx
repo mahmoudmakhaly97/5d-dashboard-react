@@ -103,7 +103,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6ImFlMDBhNzVlLWQ2N2QtNDlkYi04YmI0LWI5MWQ3M2FjMGE0NCIsImV4cCI6MTc1MjI0MzA2NCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.FxiWTm6IuYe2isoSPh3aDPjLOubsZHIyHutiFt-_v24`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
