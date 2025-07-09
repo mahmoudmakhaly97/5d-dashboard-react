@@ -21,6 +21,12 @@ export const useNavItems = () => {
       to: '/tasks',
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
+    {
+      component: CNavItem,
+      name: 'Clients',
+      to: '/clients',
+      icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
+    },
   ]
 
   const hrNav = [
@@ -34,12 +40,6 @@ export const useNavItems = () => {
       component: CNavItem,
       name: 'Reports',
       to: '/reports',
-      icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
-    },
-    {
-      component: CNavItem,
-      name: 'Clients',
-      to: '/clients',
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
   ]

@@ -22,12 +22,13 @@ const App = () => {
           <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
             <Route path="/employees" element={<Employees />} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="/clients" element={<Clients />} />
           </Route>
           <Route path="/tasks" element={<Tasks />} />
           {/* <Route path="/my-tasks" element={<Tasks myTasksView={true} />} />{' '} */}
+          <Route path="/clients" element={<Clients />} />
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
             <Route path="/tasks" element={<Tasks />} />
+            {/* <Route path="/clients" element={<Clients />} /> */}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -16,6 +16,7 @@ const ClientsContent = () => {
   const [clientToDelete, setClientToDelete] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editClientId, setEditClientId] = useState(null)
+  const authTasks = JSON.parse(localStorage.getItem('authData'))
 
   const [clientData, setClientData] = useState({
     name: '',
@@ -31,7 +32,7 @@ const ClientsContent = () => {
           'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
           {
             headers: {
-              Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer  ${authTasks.token}`,
             },
           },
         )
