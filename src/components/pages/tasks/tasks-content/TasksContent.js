@@ -739,14 +739,22 @@ const TasksContent = () => {
       return true
     }
 
-    if (!employeeId || !managerTeam || managerTeam.length === 0) {
-      return false
-    }
+    // Check if employee is in manager's direct team
+    const isDirectTeamMember = managerTeam.some(
+      (teamMember) => String(teamMember.id) === String(employeeId),
+    )
 
-    // Check if employee is in manager's team
-    return managerTeam.some((teamMember) => String(teamMember.id) === String(employeeId))
+    // Check if employee is a sub-employee (managed by any of the manager's direct reports)
+    const isSubEmployee = employees.some((emp) => {
+      // Check if this employee is managed by someone in the manager's team
+      const isManagedByTeamMember = managerTeam.some(
+        (teamMember) => String(teamMember.id) === String(emp.managerId),
+      )
+      return isManagedByTeamMember && String(emp.id) === String(employeeId)
+    })
+
+    return isDirectTeamMember || isSubEmployee
   }
-
   return (
     <div className="tasks-container mt-4">
       {selectedEmployee?.id && selectedEmployee?.name ? (
@@ -772,11 +780,11 @@ const TasksContent = () => {
               </Button>
             </span>
             <UncontrolledTooltip target="disabledButtonWrapper" placement="top">
-              {authTasks?.role === 'AccountManager'
+              {authTasks?.role === 'Account Manager'
                 ? 'Account Managers can add tasks for any employee'
                 : managerTeam.length === 0
                   ? 'Loading team information...'
-                  : 'You can only add tasks for members of your team'}
+                  : 'You can only add tasks for members of your team or their subordinates'}
             </UncontrolledTooltip>
           </div>
         )
