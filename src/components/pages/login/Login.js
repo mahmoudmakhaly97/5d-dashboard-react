@@ -20,6 +20,7 @@ import logo from '/assets/images/5d-logo.png'
 
 import './login.scss'
 import { useAuth } from '../../../context/AuthContext'
+import { BASE_URL } from '../../../api/base'
 
 const Login = () => {
   const { loginAsHR } = useAuth()
@@ -40,7 +41,7 @@ const Login = () => {
   }
   const handleLogin = async (email, password) => {
     try {
-      const res = await fetch('http://attendance-service.5d-dev.com/api/Employee/DashboardLogin', {
+      const res = await fetch(`${BASE_URL}/Employee/DashboardLogin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

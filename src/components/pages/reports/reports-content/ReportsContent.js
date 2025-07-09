@@ -16,6 +16,7 @@ import {
 import { Loader, Pagination } from '../../../ui'
 import './ReportsContent.scss'
 import { Button, Col, Row, Table } from 'reactstrap'
+import { BASE_URL } from '../../../../api/base'
 const ReportsContent = () => {
   const [reportData, setReportData] = useState({
     employees: [],
@@ -34,9 +35,7 @@ const ReportsContent = () => {
     const fetchInitialData = async () => {
       try {
         setLoading(true)
-        const deptResponse = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
-        )
+        const deptResponse = await fetch(`${BASE_URL}/Employee/GetDepartments`)
         const deptData = await deptResponse.json()
         setDepartments(deptData)
       } catch (err) {
@@ -89,9 +88,7 @@ const ReportsContent = () => {
         pageSize: ITEMS_PER_PAGE,
       })
 
-      const res = await fetch(
-        `http://attendance-service.5d-dev.com/api/Request/GetAbsentDays?${query.toString()}`,
-      )
+      const res = await fetch(`${BASE_URL}/Request/GetAbsentDays?${query.toString()}`)
       const data = await res.json()
 
       // Sort employees by department before setting

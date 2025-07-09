@@ -6,6 +6,7 @@ import { Loader, ModalMaker } from '../../../ui'
 import check from '/assets/images/check.png'
 import './ClientContent.scss'
 import { Delete, Pen, X } from 'lucide-react'
+import { BASE_URL } from '../../../../api/base'
 const ClientsContent = () => {
   const [addClientModal, setAddClientModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -28,14 +29,11 @@ const ClientsContent = () => {
     const fetchClients = async () => {
       try {
         setIsLoading(true)
-        const response = await axios.get(
-          'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
-          {
-            headers: {
-              Authorization: `Bearer  ${authTasks.token}`,
-            },
+        const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
+          headers: {
+            Authorization: `Bearer   ${authTasks.token}`,
           },
-        )
+        })
         setClients(response.data)
       } catch (error) {
         console.error('Error fetching clients:', error)
@@ -78,19 +76,15 @@ const ClientsContent = () => {
           clientCode: clientData.code,
         }
 
-        await axios.post(
-          `http://attendance-service.5d-dev.com/api/Clients/UpdateClient/${editClientId}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
+        await axios.post(`${BASE_URL}/Clients/UpdateClient/${editClientId}`, payload, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
           },
-        )
+        })
 
         setModalMessage('Client updated successfully')
       } else {
-        await axios.post('http://attendance-service.5d-dev.com/api/Clients/CreateClient', payload, {
+        await axios.post(`${BASE_URL}/Clients/CreateClient`, payload, {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -103,7 +97,7 @@ const ClientsContent = () => {
       setClientData({ name: '', code: '' })
       setIsEditing(false)
       const response = await axios.get(
-        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
+        `${BASE_URL}/Clients/GetAllClients`,
 
         {
           headers: {
@@ -127,25 +121,18 @@ const ClientsContent = () => {
 
     try {
       setIsLoading(true)
-      await axios.post(
-        `http://attendance-service.5d-dev.com/api/Clients/DeleteClient/${clientToDelete.id}`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+      await axios.post(`${BASE_URL}/Clients/DeleteClient/${clientToDelete.id}`, null, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
         },
-      )
+      })
       setModalMessage('Client deleted successfully')
 
-      const response = await axios.get(
-        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+      const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
         },
-      )
+      })
       setClients(response.data)
     } catch (error) {
       setModalMessage('Error deleting client: ' + (error.response?.data?.message || error.message))

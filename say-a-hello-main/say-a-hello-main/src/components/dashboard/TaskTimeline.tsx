@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { addWeeks, subWeeks } from 'date-fns'
 import { Button } from '../ui/button'
 import './index.scss'
+import { BASE_URL } from './../../api/base'
 
 interface TaskTimelineProps {
   department: Department | null
@@ -97,13 +98,13 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       }
 
       const response = await fetch(
-        'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks?' +
+        `${BASE_URL}/Tasks/GetAllTasks?` +
           new URLSearchParams({
             timestamp: Date.now().toString(),
           }),
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer   ${authTasks.token}`,
           },
         },
       )

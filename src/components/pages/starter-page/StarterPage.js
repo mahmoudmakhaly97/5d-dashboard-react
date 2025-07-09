@@ -6,6 +6,7 @@ import axios from 'axios'
 import './starter-page.scss'
 import { ModalMaker } from '../../ui'
 import { useAuth } from '../../../context/AuthContext'
+import { BASE_URL } from '../../../api/base'
 
 const StarterPage = () => {
   const navigate = useNavigate()
@@ -43,7 +44,7 @@ const StarterPage = () => {
     setError('')
     try {
       const response = await axios.post(
-        'http://attendance-service.5d-dev.com/api/QRLogin/qr/send-otp-email',
+        `${BASE_URL}/QRLogin/qr/send-otp-email`,
         { email },
         { headers: { 'Content-Type': 'application/json' } },
       )
@@ -73,7 +74,7 @@ const StarterPage = () => {
     setError('')
     try {
       const response = await axios.post(
-        'http://attendance-service.5d-dev.com/api/QRLogin/qr/verify-otp',
+        `${BASE_URL}/QRLogin/qr/verify-otp`,
         { uid: uuid, otp },
         { headers: { 'Content-Type': 'application/json' } },
       )

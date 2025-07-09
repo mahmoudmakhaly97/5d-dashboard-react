@@ -13,6 +13,7 @@ import { Badge, Input } from 'reactstrap'
 import { TabView, TabPanel } from 'primereact/tabview'
 
 import './EmployeeDetails.scss'
+import { BASE_URL } from '../../../../api/base'
 const EmployeeDetailsContent = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -29,12 +30,10 @@ const EmployeeDetailsContent = () => {
   const toggle = () => setModal(!modal)
   useEffect(() => {
     axios
-      .get('http://attendance-service.5d-dev.com/api/Employee/GetDepartments')
+      .get(`${BASE_URL}/Employee/GetDepartments`)
       .then((response) => setDepartments(response.data))
 
-    axios
-      .get('http://attendance-service.5d-dev.com/api/Employee/GetAllManagers')
-      .then((response) => setManagers(response.data))
+    axios.get(`${BASE_URL}/Employee/GetAllManagers`).then((response) => setManagers(response.data))
   }, [])
 
   // Fetch employee details
@@ -56,7 +55,7 @@ const EmployeeDetailsContent = () => {
       setLoading(true)
       try {
         const response = await axios.get(
-          `http://attendance-service.5d-dev.com/api/Employee/GetEmployeeWithId?id=${employeeId}`,
+          `${BASE_URL}/Employee/GetEmployeeWithId?id=${employeeId}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -167,15 +166,11 @@ const EmployeeDetailsContent = () => {
     }
 
     try {
-      await axios.post(
-        `http://attendance-service.5d-dev.com/api/Employee/UpdateEmployee?id=${employeeId}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+      await axios.post(`${BASE_URL}/Employee/UpdateEmployee?id=${employeeId}`, payload, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
         },
-      )
+      })
 
       // Find the new manager's name
       const newManager = managers.find((m) => m.id === parseInt(editFormData.managerId))

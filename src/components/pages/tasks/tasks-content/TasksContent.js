@@ -13,6 +13,7 @@ import pending from '/assets/images/expired.png'
 import './Tasks.scss'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TimeSelector from './TimeSelector'
+import { BASE_URL } from '../../../../api/base'
 // Modify your initial state to use location state
 
 const TasksContent = () => {
@@ -105,14 +106,11 @@ const TasksContent = () => {
       setIsLoadingTeam(true)
       setTeamError(null)
       try {
-        const response = await fetch(
-          'http://attendance-service.5d-dev.com/api/Employee/GetManagerTeam',
-          {
-            headers: {
-              Authorization: `Bearer  ${authTasks.token}`,
-            },
+        const response = await fetch(`${BASE_URL}/Employee/GetManagerTeam`, {
+          headers: {
+            Authorization: `Bearer   ${authTasks.token}`,
           },
-        )
+        })
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`)
@@ -138,27 +136,22 @@ const TasksContent = () => {
   const fetchData = async () => {
     try {
       // Fetch clients
-      const clientsResponse = await fetch(
-        'http://attendance-service.5d-dev.com/api/Clients/GetAllClients',
-        {
-          headers: {
-            Authorization: `Bearer   ${authTasks.token}`,
-          },
+      const clientsResponse = await fetch(`${BASE_URL}/Clients/GetAllClients`, {
+        headers: {
+          Authorization: `Bearer    ${authTasks.token}`,
         },
-      )
+      })
       const clientsData = await clientsResponse.json()
       setClients(clientsData)
 
       // Fetch departments
-      const departmentsResponse = await fetch(
-        'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
-      )
+      const departmentsResponse = await fetch(`${BASE_URL}/Employee/GetDepartments`)
       const departmentsData = await departmentsResponse.json()
       setDepartments(departmentsData)
 
       // Fetch all employees without pagination
       const employeesResponse = await fetch(
-        'http://attendance-service.5d-dev.com/api/Employee/GetAllEmployees?pageNumber=1&pageSize=1000',
+        `${BASE_URL}/Employee/GetAllEmployees?pageNumber=1&pageSize=1000`,
       )
       const employeesData = await employeesResponse.json()
       setEmployees(employeesData.employees)
@@ -174,18 +167,15 @@ const TasksContent = () => {
     const taskId = Number(task.id)
 
     try {
-      const response = await fetch(
-        `http://attendance-service.5d-dev.com/api/Tasks/DeleteTask/${taskId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            Authorization: `Bearer    ${authTasks.token}`,
-          },
-          body: JSON.stringify(taskId),
+      const response = await fetch(`${BASE_URL}/Tasks/DeleteTask/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          Authorization: `Bearer     ${authTasks.token}`,
         },
-      )
+        body: JSON.stringify(taskId),
+      })
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`)
@@ -404,11 +394,11 @@ const TasksContent = () => {
         status: isAccountManager && isAfter6PM ? 'Pending' : 'Approved',
       }
 
-      const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/CreateTask', {
+      const response = await fetch(`${BASE_URL}/Tasks/CreateTask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer    ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -466,14 +456,11 @@ const TasksContent = () => {
 
       console.log('Fetching task with ID:', taskId) // Debug log
 
-      const response = await fetch(
-        `http://attendance-service.5d-dev.com/api/Tasks/GetTaskById/${taskId.id}`,
-        {
-          headers: {
-            Authorization: `Bearer   ${authTasks.token}`,
-          },
+      const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${taskId.id}`, {
+        headers: {
+          Authorization: `Bearer    ${authTasks.token}`,
         },
-      )
+      })
 
       if (!response.ok) {
         // Try to get error details from response
@@ -591,11 +578,11 @@ const TasksContent = () => {
         createdAt: formData.createdAt,
       }
 
-      const response = await fetch('http://attendance-service.5d-dev.com/api/Tasks/UpdateTask', {
+      const response = await fetch(`${BASE_URL}/Tasks/UpdateTask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer    ${authTasks.token}`,
+          Authorization: `Bearer     ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })

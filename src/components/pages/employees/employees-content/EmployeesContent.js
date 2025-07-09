@@ -38,6 +38,7 @@ import employee from '/assets/images/employee.jpg'
 import { Loader, Pagination, ModalMaker } from '../../../ui'
 import EmployeeDetails from './../../employee-details/EmployeeDetails'
 import './EmployeesContent.scss'
+import { BASE_URL, IMAGE_PATH } from '../../../../api/base'
 
 const Dashboard = () => {
   const [employeeData, setEmployeeData] = useState({
@@ -89,14 +90,11 @@ const Dashboard = () => {
       }
 
       try {
-        const res = await axios.get(
-          `http://attendance-service.5d-dev.com/api/Employee/GetEmployeeWithId?id=${employeeId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-            },
+        const res = await axios.get(`${BASE_URL}/Employee/GetEmployeeWithId?id=${employeeId}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
           },
-        )
+        })
 
         const employeeData = res.data
 
@@ -113,7 +111,7 @@ const Dashboard = () => {
                 className="img-thumbnail rounded-circle "
                 src={
                   employeeData.ImagePath
-                    ? `http://attendance-service.5d-dev.com${employeeData.ImagePath}`
+                    ? `${IMAGE_PATH}/${employeeData.ImagePath}`
                     : 'https://placehold.co/30x30'
                 }
               />
@@ -279,13 +277,9 @@ const Dashboard = () => {
   }
   useEffect(() => {
     // Fetch departments and managers
-    axios
-      .get('http://attendance-service.5d-dev.com/api/Employee/GetDepartments')
-      .then((res) => setDepartments(res.data))
+    axios.get(`${BASE_URL}/Employee/GetDepartments`).then((res) => setDepartments(res.data))
 
-    axios
-      .get('http://attendance-service.5d-dev.com/api/Employee/GetAllManagers')
-      .then((res) => setManagers(res.data))
+    axios.get(`${BASE_URL}/Employee/GetAllManagers`).then((res) => setManagers(res.data))
   }, [])
 
   const handleEmployeeChange = (e) => {
@@ -314,7 +308,7 @@ const Dashboard = () => {
     }
 
     try {
-      await axios.post('http://attendance-service.5d-dev.com/api/Employee/AddEmployee', formData)
+      await axios.post(`${BASE_URL}/Employee/AddEmployee`, formData)
 
       setModal(false)
       setModalMessageVisible(true)
@@ -392,12 +386,9 @@ const Dashboard = () => {
 
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : ''
 
-      const response = await axios.get(
-        `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees${queryString}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      )
+      const response = await axios.get(`${BASE_URL}/Employee/SearchEmployees${queryString}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
       if (Array.isArray(response.data)) {
         setEmployees(response.data)
         setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE))
@@ -776,7 +767,7 @@ const Dashboard = () => {
                                 width={40}
                                 height={40}
                                 className="rounded-circle"
-                                src={`http://attendance-service.5d-dev.com${employee.imagePath}`}
+                                src={`${IMAGE_PATH}/${employee.imagePath}`}
                               />
                             ) : (
                               <img

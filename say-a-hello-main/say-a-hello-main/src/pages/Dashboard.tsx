@@ -13,6 +13,7 @@ import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import './Dashboard.css'
 import TaskCard from '@/components/dashboard/TaskCard'
+import { BASE_URL, IMAGE_PATH } from './../api/base'
 export interface Task {
   createdAt: Date
   assignedToEmployeeId?: number
@@ -80,25 +81,19 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       setSelectedDepartment(null)
       setSelectedEmployee(null)
       // Fetch departments
-      const departmentsResponse = await fetch(
-        'http://attendance-service.5d-dev.com/api/Employee/GetDepartments',
-        {
-          headers: {
-            Authorization: `Bearer   ${authToken}`,
-          },
+      const departmentsResponse = await fetch(`${BASE_URL}/Employee/GetDepartments`, {
+        headers: {
+          Authorization: `Bearer   ${authToken}`,
         },
-      )
+      })
       const departmentsData = await departmentsResponse.json()
 
       // Fetch tasks
-      const tasksResponse = await fetch(
-        'http://attendance-service.5d-dev.com/api/Tasks/GetAllTasks',
-        {
-          headers: {
-            Authorization: `Bearer   ${authTasks.token}`,
-          },
+      const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
+        headers: {
+          Authorization: `Bearer    ${authTasks.token}`,
         },
-      )
+      })
       const tasksData = await tasksResponse.json()
 
       // Process data and create department structure
@@ -106,7 +101,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         departmentsData.map(async (dept: any) => {
           // Fetch employees for this department
           const employeesResponse = await fetch(
-            `http://attendance-service.5d-dev.com/api/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
+            `${BASE_URL}/Employee/SearchEmployees?departments=${dept.name.toLowerCase()}`,
           )
           const employeesData = await employeesResponse.json()
 
@@ -132,9 +127,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
               id: emp.id.toString(),
               name: emp.name,
               position: emp.jobTitle || 'Employee',
-              avatar: emp.imagePath
-                ? `http://attendance-service.5d-dev.com${emp.imagePath}`
-                : undefined,
+              avatar: emp.imagePath ? `${IMAGE_PATH}/${emp.imagePath}` : undefined,
               department: emp.department,
               tasks: employeeTasks,
             }
