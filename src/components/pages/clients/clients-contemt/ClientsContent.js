@@ -31,7 +31,7 @@ const ClientsContent = () => {
         setIsLoading(true)
         const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
           headers: {
-            Authorization: `Bearer   ${authTasks.token}`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
           },
         })
         setClients(response.data)
