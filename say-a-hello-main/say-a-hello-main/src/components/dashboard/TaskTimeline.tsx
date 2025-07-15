@@ -314,6 +314,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         {/* Main timeline layout */}
         <div className="flex">
           {/* Hour lines column */}
+
           <div className="w-16 flex-shrink-0">
             {hours.map((hour) => (
               <div key={hour} className="h-24 flex items-end">
