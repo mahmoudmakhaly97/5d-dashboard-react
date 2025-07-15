@@ -49,7 +49,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const authTasks = JSON.parse(localStorage.getItem('authData'))
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
   const [allowCreateTask, setAllowCreateTask] = useState(true)
-  const [currentMonthOffset, setCurrentMonthOffset] = useState(0)
+  const [selectedDayForNewTask, setSelectedDayForNewTask] = useState<Date>(() => new Date())
 
   const handleNextWeek = () => {
     setCurrentWeekOffset((prev) => prev + 1)
@@ -77,14 +77,27 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     return () => clearInterval(interval)
   }, [])
-
   const handleDayClick = (date: Date) => {
+    setSelectedDayForNewTask(date)
     setSelectedDate(date)
+
     if (onDateSelect) {
       onDateSelect(date)
     }
   }
+  const handleCreateTask = (taskData: Partial<Task>) => {
+    if (!selectedDayForNewTask) return
 
+    const newTask: Task = {
+      ...taskData,
+      date: selectedDayForNewTask.toISOString(),
+      // other task properties
+    }
+
+    // Call your API to create the task
+    // Then refresh the tasks list
+    fetchData()
+  }
   const handleDeleteClick = (task: Task) => {
     setSelectedTaskToDelete(task)
     setShowDeleteModal(true)
@@ -227,6 +240,18 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const stopwatchPosition = calculateStopwatchPosition()
 
+  // Add this useEffect to set today's date when an employee is selected
+  useEffect(() => {
+    if (employee) {
+      const today = new Date()
+      setSelectedDayForNewTask(today)
+      setSelectedDate(today)
+
+      if (onDateSelect) {
+        onDateSelect(today)
+      }
+    }
+  }, [employee])
   return (
     <div className="relative w-full sm:overflow-auto p-4">
       <div className="flex flex-wrap mb-4 justify-between items-start w-full px-4 sm:px-[20px]">
@@ -285,7 +310,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       ) : null}
 
       {/* Timeline structure */}
-      <div className="relative min-h-[600px] overflow-auto">
+      <div className="relative min-h-[600px] overflow-auto ">
         {/* Main timeline layout */}
         <div className="flex">
           {/* Hour lines column */}
@@ -320,10 +345,16 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 {dateRange.map((date, dateIndex) => (
                   <div
                     key={dateIndex}
-                    className="flex-shrink-0 sm:min-w-[225px] min-w-[100px] max-w-[250px] border-r border-gray-200"
+                    className={`rounded-t flex-shrink-0 sm:min-w-[225px] min-w-[100px] max-w-[250px] border-r border-gray-200 ${
+                      selectedDate && isSameDay(date, selectedDate) ? 'selected-day' : ''
+                    }`}
                   >
                     {/* Date header */}
-                    <div className="h-10 flex items-center justify-center border-b border-gray-200">
+                    <div
+                      className={`h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
+    ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm' : ''}`}
+                      onClick={() => handleDayClick(date)}
+                    >
                       <div className="flex flex-col items-center">
                         <span className="text-sm font-medium">{format(date, 'EEE')}</span>
                         <span className="text-xs text-muted-foreground">

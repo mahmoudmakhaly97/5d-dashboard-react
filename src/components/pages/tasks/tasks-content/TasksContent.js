@@ -334,6 +334,8 @@ const TasksContent = () => {
     e.preventDefault()
 
     try {
+      const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
+
       // Convert time string to Egypt ISO format
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
@@ -388,8 +390,8 @@ const TasksContent = () => {
         updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
         slotCount: Math.max(1, Number(formData.slotCount)),
-        startTime: convertToEgyptISOTime(formData.startTime),
-        endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime) : null,
+        startTime: convertToEgyptISOTime(formData.startTime, selectedDate),
+        endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime, selectedDate) : null,
         createdAt: new Date().toISOString(),
         clientId: formData.clientId,
         needsApproval: isAccountManager && isAfter6PM,

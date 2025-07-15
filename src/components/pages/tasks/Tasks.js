@@ -13,9 +13,9 @@ const Tasks = () => {
         <Row>
           <TasksContent />
         </Row>
-        <di className="d-none d-sm-flex">
+        {/* <div className="d-none d-sm-flex">
           <AppFooter />
-        </di>
+        </div> */}
       </div>
     </div>
   )

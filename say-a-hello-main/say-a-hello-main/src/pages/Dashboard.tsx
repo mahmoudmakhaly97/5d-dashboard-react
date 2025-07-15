@@ -214,7 +214,11 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const handleEmployeeSelect = (department: Department, employee: Employee | null) => {
     setSelectedDepartment(department)
     setSelectedEmployee(employee)
-    // Only close mobile sidebar when selecting an employee (not department)
+
+    // Reset to today's date when selecting an employee
+    const today = new Date()
+    setCurrentDate(today)
+
     if (employee) {
       setIsMobileSidebarOpen(false)
     }
