@@ -3,5 +3,9 @@
   border-right: 1px dotted #721a95;
 }
 .today-border {
-  width: 200px;
+  width: 240px;
+}
+.today_name:first-child {
+  width: 200px !important;
+  left: 80px;
 }

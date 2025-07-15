@@ -108,7 +108,7 @@ const TasksContent = () => {
       try {
         const response = await fetch(`${BASE_URL}/Employee/GetManagerTeam`, {
           headers: {
-            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
           },
         })
 
@@ -138,7 +138,7 @@ const TasksContent = () => {
       // Fetch clients
       const clientsResponse = await fetch(`${BASE_URL}/Clients/GetAllClients`, {
         headers: {
-          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
         },
       })
       const clientsData = await clientsResponse.json()
@@ -172,7 +172,7 @@ const TasksContent = () => {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-          Authorization: `Bearer     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+          Authorization: `Bearer     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
         },
         body: JSON.stringify(taskId),
       })
@@ -398,7 +398,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
         },
         body: JSON.stringify(apiData),
       })
@@ -458,7 +458,7 @@ const TasksContent = () => {
 
       const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${taskId.id}`, {
         headers: {
-          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+          Authorization: `Bearer    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
         },
       })
 
@@ -582,7 +582,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+          Authorization: `Bearer     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
         },
         body: JSON.stringify(apiData),
       })

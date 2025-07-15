@@ -104,7 +104,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiZmQ3YTc4NTgtOTI2NC00OTJjLWI4NmEtZWQ4Y2QxYTc5M2ZkIiwiZXhwIjoxNzUyNTAxNzAwLCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.mGKFc3pOolKHj0bq3fmfpRlq81Dbuj230FVkETR_Njg`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
           },
         },
       )
@@ -251,7 +251,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           {department.employees.map((emp) => (
             <div
               key={emp.id}
-              className="flex-shrink-0 p-2 text-center font-medium cursor-pointer relative left-0 sm:left-[50px] min-w-[150px] sm:max-w-[231px]"
+              className="today_name flex-shrink-0 p-2 text-center font-medium cursor-pointer relative left-0 sm:left-[105px] min-w-[212px] sm:max-w-[231px]"
             >
               <div className="flex items-center justify-center space-x-2">
                 <Avatar className="h-6 w-6">
@@ -345,7 +345,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
               marginTop: '-1px',
             }}
           >
-            <div className="absolute -left-4 -top-3">
+            <div className="absolute -left-0 -top-3">
               <Stopwatch color="#ea384c" />
             </div>
           </div>
