@@ -31,7 +31,7 @@ const ClientsContent = () => {
         setIsLoading(true)
         const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
           headers: {
-            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiI5N2MzMDBhYi01NGVjLTQ0MjktOGUyZS05MzJmZDZhMjVkNmIiLCJleHAiOjE3NTMwMTEyNTMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9._jJ4ApmKxMDZlcNftbWvOr6gOCHCKbm4wSELnfkLmtg`,
           },
         })
         setClients(response.data)

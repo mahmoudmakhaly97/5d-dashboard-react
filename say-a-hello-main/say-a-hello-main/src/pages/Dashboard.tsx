@@ -98,7 +98,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiJkNzcwMzdiNy0wYjVlLTRlNTYtOWRhZi1kM2JmMDU2NDhjYjEiLCJleHAiOjE3NTMwMDMwMzYsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9.3dwz9feG_wE1zoJlYLUm23JAWAQd24Ur-Pvikh9WSPs`,
+          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiI5N2MzMDBhYi01NGVjLTQ0MjktOGUyZS05MzJmZDZhMjVkNmIiLCJleHAiOjE3NTMwMTEyNTMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9._jJ4ApmKxMDZlcNftbWvOr6gOCHCKbm4wSELnfkLmtg`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -271,7 +271,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         </div>
 
         {/* Main content area */}
-        <div className="flex flex-1 h-full overflow-hidden relative">
+        <div className="flex flex-1 h-full overflow-x-hidden relative">
           {/* Desktop sidebar */}
           <div className="hidden lg:block w-64 border-r overflow-auto bg-muted/10 p-4">
             <Accordion type="multiple" className="w-full">
@@ -416,18 +416,29 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
 
           {/* Task Timeline - now takes full width on mobile */}
           <div className="flex-1 min-w-0">
-            <TaskTimeline
-              department={selectedDepartment}
-              employee={selectedEmployee}
-              currentDate={currentDate}
-              onDateSelect={(date) => setCurrentDate(date)}
-              onEditTask={onEditTask}
-              onDeleteTask={onDeleteTask}
-              onAllowCreateTaskChange={handleAllowCreateTaskChange}
-              showOnlyMyTasks={showOnlyMyTasks}
-              currentUserId={currentUserId}
-              managerTeam={managerTeam}
-            />
+            {!selectedDepartment ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center p-4">
+                  <h3 className="text-lg font-medium">No department selected</h3>
+                  <p className="text-muted-foreground">
+                    Please select a department from the sidebar
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <TaskTimeline
+                department={selectedDepartment}
+                employee={selectedEmployee}
+                currentDate={currentDate}
+                onDateSelect={(date) => setCurrentDate(date)}
+                onEditTask={onEditTask}
+                onDeleteTask={onDeleteTask}
+                onAllowCreateTaskChange={handleAllowCreateTaskChange}
+                showOnlyMyTasks={showOnlyMyTasks}
+                currentUserId={currentUserId}
+                managerTeam={managerTeam}
+              />
+            )}
           </div>
         </div>
       </div>

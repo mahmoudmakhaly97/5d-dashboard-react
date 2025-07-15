@@ -38,7 +38,6 @@
 .dashboard-container {
   flex: 1;
   position: relative;
-  overflow: hidden;
 }
 /* In your Tasks.scss */
 .tooltip-style {
@@ -185,8 +184,4 @@
   .flex.flex-wrap.gap-2.ml-4.my-4.justify-between.btn-tasks-container {
     width: 340px;
   }
-}
-
-.tasks-container .flex.h-full {
-  height: 1200px;
 }
