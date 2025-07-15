@@ -42,6 +42,8 @@ const TasksContent = () => {
   const location = useLocation()
   const [showOnlyMyTasks, setShowOnlyMyTasks] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [selectedDepartment, setSelectedDepartment] = useState(null)
+
   const [selectedEmployee, setSelectedEmployee] = useState(
     location.state?.employeeId
       ? {
@@ -741,7 +743,25 @@ const TasksContent = () => {
     })
 
     return isDirectTeamMember || isSubEmployee
-  }
+  } // Add this useEffect to track department selection
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (dashboardRef.current) {
+        const currentDept = dashboardRef.current.getSelectedDepartment?.()
+        const currentEmployee = dashboardRef.current.getSelectedEmployee?.()
+
+        if (currentDept?.id !== selectedDepartment?.id) {
+          setSelectedDepartment(currentDept)
+        }
+
+        if (currentEmployee?.id !== selectedEmployee?.id) {
+          setSelectedEmployee(currentEmployee)
+        }
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [selectedEmployee, selectedDepartment])
   return (
     <div className="tasks-container mt-4">
       {selectedEmployee?.id && selectedEmployee?.name ? (
