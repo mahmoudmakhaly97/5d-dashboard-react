@@ -9,3 +9,9 @@
   width: 200px !important;
   left: 80px;
 }
+.empty-department {
+  @media (max-width: 768px) {
+    position: absolute;
+    top: 150px;
+  }
+}

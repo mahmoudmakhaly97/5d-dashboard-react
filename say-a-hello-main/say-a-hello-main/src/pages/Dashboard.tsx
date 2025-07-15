@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import './Dashboard.css'
 import TaskCard from '@/components/dashboard/TaskCard'
 import { BASE_URL, IMAGE_PATH } from './../api/base'
-
+import '../components/dashboard/index.scss'
 export interface Task {
   createdAt: Date
   assignedToEmployeeId?: number
@@ -98,7 +98,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiI5N2MzMDBhYi01NGVjLTQ0MjktOGUyZS05MzJmZDZhMjVkNmIiLCJleHAiOjE3NTMwMTEyNTMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9._jJ4ApmKxMDZlcNftbWvOr6gOCHCKbm4wSELnfkLmtg`,
+          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -418,7 +418,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
           <div className="flex-1 min-w-0">
             {!selectedDepartment ? (
               <div className="flex h-full items-center justify-center">
-                <div className="text-center p-4">
+                <div className="text-center p-4 empty-department">
                   <h3 className="text-lg font-medium">No department selected</h3>
                   <p className="text-muted-foreground">
                     Please select a department from the sidebar

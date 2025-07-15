@@ -104,7 +104,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NyIsInN1YiI6IjI2NyIsImVtYWlsIjoibW9oYW1lZC5lbGVyYWt5QDVkLWFnZW5jeS5jb20iLCJqdGkiOiI5N2MzMDBhYi01NGVjLTQ0MjktOGUyZS05MzJmZDZhMjVkNmIiLCJleHAiOjE3NTMwMTEyNTMsImlzcyI6IkF0dGVuZGFuY2VBcHAiLCJhdWQiOiJBdHRlbmRhbmNlQXBpVXNlciJ9._jJ4ApmKxMDZlcNftbWvOr6gOCHCKbm4wSELnfkLmtg`,
+            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
           },
         },
       )
@@ -320,7 +320,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 {dateRange.map((date, dateIndex) => (
                   <div
                     key={dateIndex}
-                    className="flex-shrink-0 min-w-[225px] max-w-[250px] border-r border-gray-200"
+                    className="flex-shrink-0 sm:min-w-[225px] min-w-[100px] max-w-[250px] border-r border-gray-200"
                   >
                     {/* Date header */}
                     <div className="h-10 flex items-center justify-center border-b border-gray-200">
@@ -379,15 +379,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 {department.employees.map((emp) => (
                   <div
                     key={emp.id}
-                    className="flex-shrink-0 min-w-[200px] max-w-[250px] border-r border-gray-200"
+                    className="flex-shrink-0 min-w-[170px] sm:min-w-[200px] max-w-[250px] border-r border-gray-200"
                   >
                     {/* Employee header */}
                     <div className="h-10 flex items-center justify-center border-b border-gray-200">
                       <div className="flex items-center space-x-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={emp.avatar} alt={emp.name} />
-                          <AvatarFallback>{emp.name.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
                         <span className="text-sm font-medium truncate max-w-[150px]">
                           {emp.name}
                         </span>
@@ -405,7 +401,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       </div>
                     </div>
                     {/* Tasks for this employee */}
-                    <div className="relative h-screen">
+                    <div className="relative sm:h-screen">
                       {/* Time indicator line */}
 
                       {/* Tasks */}

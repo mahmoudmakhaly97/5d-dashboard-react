@@ -13,7 +13,9 @@ const Tasks = () => {
         <Row>
           <TasksContent />
         </Row>
-        <AppFooter />
+        <di className="d-none d-sm-flex">
+          <AppFooter />
+        </di>
       </div>
     </div>
   )
