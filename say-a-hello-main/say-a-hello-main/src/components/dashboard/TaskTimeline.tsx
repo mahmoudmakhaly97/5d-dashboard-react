@@ -3,7 +3,16 @@ import { Department, Employee, Task } from '@/pages/Dashboard'
 import Stopwatch from '@/components/dashboard/Stopwatch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { format, isSameDay, isToday, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
+import {
+  format,
+  isSameDay,
+  isToday,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isAfter,
+  isWithinInterval,
+} from 'date-fns'
 import TaskCard from './TaskCard'
 import * as Dialog from '@radix-ui/react-dialog'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
@@ -53,18 +62,42 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const handleNextWeek = () => {
     setCurrentWeekOffset((prev) => prev + 1)
-    setAllowCreateTask(true)
-    onAllowCreateTaskChange?.(true)
+
+    // Move the selected date one week forward
+    const newSelectedDate = addWeeks(selectedDate || new Date(), 1)
+    setSelectedDate(newSelectedDate)
+    setSelectedDayForNewTask(newSelectedDate)
+
+    // Allow task creation only if the new week is not in the future
+    const isFutureWeek = isAfter(newSelectedDate, endOfWeek(new Date()))
+    setAllowCreateTask(!isFutureWeek)
+    onAllowCreateTaskChange?.(!isFutureWeek)
   }
 
   const handlePrevWeek = () => {
     setCurrentWeekOffset((prev) => prev - 1)
-    setAllowCreateTask(false)
-    onAllowCreateTaskChange?.(false)
+
+    // Move the selected date one week backward
+    const newSelectedDate = subWeeks(selectedDate || new Date(), 1)
+    setSelectedDate(newSelectedDate)
+    setSelectedDayForNewTask(newSelectedDate)
+
+    // Allow task creation only if the selected week is within the allowed past range (1 week)
+    const isWithinAllowedPast = isWithinInterval(newSelectedDate, {
+      start: subWeeks(startOfWeek(new Date()), 1),
+      end: endOfWeek(new Date()),
+    })
+    setAllowCreateTask(isWithinAllowedPast)
+    onAllowCreateTaskChange?.(isWithinAllowedPast)
   }
 
   const handleCurrentWeek = () => {
     setCurrentWeekOffset(0)
+
+    const today = new Date()
+    setSelectedDate(today)
+    setSelectedDayForNewTask(today)
+
     setAllowCreateTask(true)
     onAllowCreateTaskChange?.(true)
   }
@@ -80,6 +113,16 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const handleDayClick = (date: Date) => {
     setSelectedDayForNewTask(date)
     setSelectedDate(date)
+
+    // Validate if the selected date is allowed for task creation (within the last week and not in the future)
+    const oneWeekAgo = subWeeks(new Date(), 1)
+    const isAllowed = isWithinInterval(date, {
+      start: oneWeekAgo,
+      end: new Date(),
+    })
+
+    setAllowCreateTask(isAllowed)
+    onAllowCreateTaskChange?.(isAllowed)
 
     if (onDateSelect) {
       onDateSelect(date)
