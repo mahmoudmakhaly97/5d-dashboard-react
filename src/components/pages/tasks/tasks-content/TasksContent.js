@@ -6,7 +6,7 @@ import { UncontrolledTooltip } from 'reactstrap'
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
-import { format } from 'date-fns'
+import { format, subWeeks, isBefore, isAfter } from 'date-fns'
 import { Tooltip } from 'reactstrap'
 import check from '/assets/images/check.png'
 import pending from '/assets/images/expired.png'
@@ -335,6 +335,20 @@ const TasksContent = () => {
 
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
+
+      // Validate selected date: cannot be more than 1 week in the past or in the future
+      const oneWeekAgo = subWeeks(new Date(), 1)
+      if (isBefore(selectedDate, oneWeekAgo)) {
+        setModalMessage('Cannot create tasks more than one week in the past')
+        setModalMessageVisible(true)
+        return
+      }
+
+      if (isAfter(selectedDate, new Date())) {
+        setModalMessage('Cannot create tasks in the future')
+        setModalMessageVisible(true)
+        return
+      }
 
       // Convert time string to Egypt ISO format
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
@@ -768,13 +782,55 @@ const TasksContent = () => {
     <div className="tasks-container  ">
       {selectedEmployee?.id && selectedEmployee?.name ? (
         authTasks?.role === 'Account Manager' ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
+          allowCreateTask ? (
+            <Button color="primary" onClick={toggle} className="add-task">
+              Add Task for {selectedEmployee.name}
+            </Button>
+          ) : (
+            <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+              <span
+                id="disabledAccountManagerDateWrapper"
+                style={{ display: 'inline-block', cursor: 'not-allowed' }}
+              >
+                <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+                  Add Task for {selectedEmployee.name}
+                </Button>
+              </span>
+              <UncontrolledTooltip
+                target="disabledAccountManagerDateWrapper"
+                placement="top"
+                delay={{ show: 0, hide: 0 }}
+                fade={true}
+              >
+                You can only create tasks for the current or previous week.
+              </UncontrolledTooltip>
+            </div>
+          )
         ) : isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
+          allowCreateTask ? (
+            <Button color="primary" onClick={toggle} className="add-task">
+              Add Task for {selectedEmployee.name}
+            </Button>
+          ) : (
+            <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+              <span
+                id="dateDisabledButtonWrapper"
+                style={{ display: 'inline-block', cursor: 'not-allowed' }}
+              >
+                <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+                  Add Task for {selectedEmployee.name}
+                </Button>
+              </span>
+              <UncontrolledTooltip
+                target="dateDisabledButtonWrapper"
+                placement="top"
+                delay={{ show: 0, hide: 0 }}
+                fade={true}
+              >
+                You can only create tasks for the current or previous week.
+              </UncontrolledTooltip>
+            </div>
+          )
         ) : (
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
