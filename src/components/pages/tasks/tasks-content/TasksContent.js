@@ -6,7 +6,7 @@ import { UncontrolledTooltip } from 'reactstrap'
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
-import { format } from 'date-fns'
+import { format, isAfter, isBefore, subWeeks, addWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns'
 import { Tooltip } from 'reactstrap'
 import check from '/assets/images/check.png'
 import pending from '/assets/images/expired.png'
@@ -92,6 +92,25 @@ const TasksContent = () => {
   useEffect(() => {
     setShowOnlyMyTasks(location.pathname === '/my-tasks')
   }, [location])
+
+  // Handle date selection changes and update allowCreateTask state
+  useEffect(() => {
+    if (selectedDate) {
+      const oneWeekAgo = subWeeks(new Date(), 1)
+      const today = new Date()
+      today.setHours(23, 59, 59, 999) // Set to end of today
+      
+      const isValidDate = isWithinInterval(selectedDate, {
+        start: oneWeekAgo,
+        end: today
+      })
+      
+      setAllowCreateTask(isValidDate)
+    } else {
+      setAllowCreateTask(true) // Default to true when no date is selected
+    }
+  }, [selectedDate])
+
   const toggle = () => {
     setModal(!modal)
     if (!modal) {
@@ -335,6 +354,23 @@ const TasksContent = () => {
 
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
+
+      // Validate date isn't too far in the past (more than 1 week)
+      const oneWeekAgo = subWeeks(new Date(), 1)
+      if (isBefore(selectedDate, oneWeekAgo)) {
+        setModalMessage("Cannot create tasks more than one week in the past")
+        setModalMessageVisible(true)
+        return
+      }
+
+      // Validate date isn't in the future
+      const today = new Date()
+      today.setHours(23, 59, 59, 999) // Set to end of today
+      if (isAfter(selectedDate, today)) {
+        setModalMessage("Cannot create tasks in the future")
+        setModalMessageVisible(true)
+        return
+      }
 
       // Convert time string to Egypt ISO format
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
@@ -768,13 +804,61 @@ const TasksContent = () => {
     <div className="tasks-container  ">
       {selectedEmployee?.id && selectedEmployee?.name ? (
         authTasks?.role === 'Account Manager' ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
+          allowCreateTask ? (
+            <Button color="primary" onClick={toggle} className="add-task">
+              Add Task for {selectedEmployee.name}
+            </Button>
+          ) : (
+            <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+              <span
+                id="disabledDateButtonWrapper"
+                style={{
+                  display: 'inline-block',
+                  cursor: 'not-allowed',
+                }}
+              >
+                <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+                  Add Task for {selectedEmployee?.name}
+                </Button>
+              </span>
+              <UncontrolledTooltip
+                target="disabledDateButtonWrapper"
+                placement="top"
+                delay={{ show: 0, hide: 0 }}
+                fade={true}
+              >
+                Cannot create tasks for this date. Please select a valid date within the allowed range.
+              </UncontrolledTooltip>
+            </div>
+          )
         ) : isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
+          allowCreateTask ? (
+            <Button color="primary" onClick={toggle} className="add-task">
+              Add Task for {selectedEmployee.name}
+            </Button>
+          ) : (
+            <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+              <span
+                id="disabledDateButtonWrapper2"
+                style={{
+                  display: 'inline-block',
+                  cursor: 'not-allowed',
+                }}
+              >
+                <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+                  Add Task for {selectedEmployee?.name}
+                </Button>
+              </span>
+              <UncontrolledTooltip
+                target="disabledDateButtonWrapper2"
+                placement="top"
+                delay={{ show: 0, hide: 0 }}
+                fade={true}
+              >
+                Cannot create tasks for this date. Please select a valid date within the allowed range.
+              </UncontrolledTooltip>
+            </div>
+          )
         ) : (
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
