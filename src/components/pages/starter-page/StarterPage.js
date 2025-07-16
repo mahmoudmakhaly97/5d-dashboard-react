@@ -64,6 +64,8 @@ const StarterPage = () => {
   }
 
   // In your verifyUuid function in StarterPage.js
+  // In your verifyUuid function in StarterPage.js
+  // In your verifyUuid function in StarterPage.js
   const verifyUuid = async () => {
     if (!otp || otp.trim() === '') {
       setError('Please enter the OTP.')
@@ -80,23 +82,29 @@ const StarterPage = () => {
       )
 
       if (response.data.token || response.data.success === true) {
-        const authTasks = {
+        const authData = {
           token: response.data.token,
           role: 'employee',
           user: {
-            name: response.data.user?.name || email.split('@')[0], // Use name from response or email prefix
+            name: response.data.user?.name || email.split('@')[0],
             email: email,
           },
         }
 
-        // Save to localStorage as authTasks
-        localStorage.setItem('authTasks', JSON.stringify(authTasks))
+        // Save to localStorage as authData (consistent with your AuthContext)
+        localStorage.setItem('authData', JSON.stringify(authData))
+
+        // Save to sessionStorage as authToken (consistent with your AuthContext)
+        sessionStorage.setItem('authToken', response.data.token)
 
         // Set axios default headers
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
 
-        // Update auth context
-        loginAsEmployee(response.data.token)
+        // **IMPORTANT: Call loginAsEmployee from your auth context**
+        loginAsEmployee(response.data.token, {
+          name: response.data.user?.name || email.split('@')[0],
+          email: email,
+        })
 
         // Navigate to tasks
         navigate('/tasks')
@@ -130,8 +138,8 @@ const StarterPage = () => {
         <div className="d-flex gap-4">
           <Card
             className="p-4 rounded-4 cursor-pointer d-flex flex-column align-items-center justify-content-center bg-white border-0"
-            // onClick={() => setEmailModal(true)}
-            onClick={() => navigate('/tasks')}
+            onClick={() => setEmailModal(true)}
+            // onClick={() => navigate('/tasks')}
           >
             <img src="./assets/images/employees.svg" className="employees-img" alt="employees" />
             <img

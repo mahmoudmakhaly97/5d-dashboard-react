@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Lock, User } from 'lucide-react'
 
 import {
@@ -24,6 +24,8 @@ import { BASE_URL } from '../../../api/base'
 
 const Login = () => {
   const { loginAsHR } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const [login, setLogin] = useState({
     email: '',
@@ -31,7 +33,18 @@ const Login = () => {
     rememberMe: false,
   })
   const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
+  const [canGoBack, setCanGoBack] = useState(false)
+
+  // Check if user can go back to a safe route
+  useEffect(() => {
+    // Check if there's a previous route and it's not a protected route
+    const from = location.state?.from?.pathname
+    const isFromProtectedRoute = from && (from.includes('/employees') || from.includes('/employee'))
+
+    // Only allow going back if it's not from a protected route
+    setCanGoBack(!isFromProtectedRoute && window.history.length > 1)
+  }, [location])
+
   const onChangeHandler = (e) => {
     const { name, value, type, checked } = e.target
     setLogin({
@@ -39,6 +52,7 @@ const Login = () => {
       [name]: type === 'checkbox' ? checked : value,
     })
   }
+
   const handleLogin = async (email, password) => {
     try {
       const res = await fetch(`${BASE_URL}/Employee/DashboardLogin`, {
@@ -73,11 +87,6 @@ const Login = () => {
     e.preventDefault()
 
     if (!login.email || !login.password) {
-      // Swal.fire({
-      //   icon: 'error',
-      //   title: 'Missing Fields',
-      //   text: 'Please fill in both email and password fields.',
-      // })
       return
     }
 
@@ -86,14 +95,22 @@ const Login = () => {
     setIsLoading(false)
   }
 
+  const handleBack = () => {
+    if (canGoBack) {
+      navigate(-1) // Go back in history
+    } else {
+      navigate('/') // Go to home page as fallback
+    }
+  }
+
   return (
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center login">
       <Container>
         <Row className="justify-content-center">
           <Col md={8}>
-            <div className="d-flex align-items-center  back">
+            <div className="d-flex align-items-center back">
               <div className="icon">
-                <ArrowLeft size={18} className="cursor-pointer " onClick={() => navigate('/')} />
+                <ArrowLeft size={18} className="cursor-pointer" onClick={handleBack} />
               </div>
               <h4 className="pt-4">Back</h4>
             </div>
@@ -128,7 +145,7 @@ const Login = () => {
                       onChange={onChangeHandler}
                     />
                   </InputGroup>
-                  <FormGroup switch className="d-flex align-items-center  ps-0 gap-5  mb-4">
+                  <FormGroup switch className="d-flex align-items-center ps-0 gap-5 mb-4">
                     <Label for="rememberMe" className="mb-0">
                       Remember Me
                     </Label>

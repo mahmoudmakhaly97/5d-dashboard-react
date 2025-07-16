@@ -117,7 +117,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+            Authorization: `Bearer  ${authTasks.token}`,
           },
         },
       )
@@ -328,18 +328,32 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
           {/* Employees and tasks columns */}
           {/* .................................***********............................................................ */}
-          <div className="flex-1 overflow-hidden relative ">
+          <div className="flex-1 overflow-hidden relative">
             <div
-              className="overflow-x-auto overflow-y-hidden rotate-180 h-full scrollbar-custom"
-              style={{
-                position: 'relative',
-                top: '50px',
+              className="overflow-x-auto overflow-y-hidden rotate-180 h-full"
+              ref={(el) => {
+                if (el) el.scrollTop = 50 // Optional: Force initial scroll position
               }}
             >
               {/* Weekly view for selected employee */}
-              <div className="rotate-180 w-full min-w-max">
+              <div className="rotate-180 w-full min-w-max ">
                 {employee && dateRange.length > 1 && (
-                  <div className="flex ">
+                  <div className="flex relative">
+                    {/* Hour markers - placed here to span all date columns */}
+                    <div className="absolute left-0 right-0 h-full pointer-events-none">
+                      {Array.from({ length: 24 }).map((_, hour) => (
+                        <div
+                          key={hour}
+                          className="border-t border-gray-200"
+                          style={{
+                            top: `${hour * 90}px`, // Assuming 60px per hour
+                            position: 'absolute',
+                            width: '100%',
+                          }}
+                        ></div>
+                      ))}
+                    </div>
+
                     {/* Time indicator line - placed here to span all date columns */}
                     <div
                       className="absolute left-0 right-0 border-t-2 border-red-500 z-10"
@@ -348,7 +362,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                         marginTop: '-1px',
                       }}
                     >
-                      <div className="absolute  -top-3">
+                      <div className="absolute -top-3">
                         <Stopwatch color="#ea384c" />
                       </div>
                     </div>
@@ -363,7 +377,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                         {/* Date header */}
                         <div
                           className={`h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
-    ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm' : ''}`}
+                  ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm' : ''}`}
                           onClick={() => handleDayClick(date)}
                         >
                           <div className="flex flex-col items-center">
@@ -418,6 +432,21 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                 {/* Daily view for department (multiple employees) */}
                 {!employee && department && department.employees && (
                   <div className="flex">
+                    {/* Hour markers for department view */}
+                    <div className="absolute left-0 right-0 h-full pointer-events-none">
+                      {Array.from({ length: 24 }).map((_, hour) => (
+                        <div
+                          key={hour}
+                          className="border-b border-gray-200"
+                          style={{
+                            top: `${hour * 90}px`, // Assuming 60px per hour
+                            position: 'absolute',
+                            width: '100%',
+                          }}
+                        ></div>
+                      ))}
+                    </div>
+
                     {department.employees.map((emp) => (
                       <div
                         key={emp.id}
@@ -438,15 +467,12 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                             marginTop: '-1px',
                           }}
                         >
-                          <div className="absolute   -top-3">
+                          <div className="absolute -top-3">
                             <Stopwatch color="#ea384c" />
                           </div>
                         </div>
                         {/* Tasks for this employee */}
                         <div className="relative sm:h-screen">
-                          {/* Time indicator line */}
-
-                          {/* Tasks */}
                           {(emp.tasks || [])
                             .filter(
                               (task) =>

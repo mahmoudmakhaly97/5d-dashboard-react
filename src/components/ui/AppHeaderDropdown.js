@@ -23,39 +23,56 @@ const AppHeaderDropdown = () => {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('authTasks')
-      if (stored) {
-        const authTasks = JSON.parse(stored)
+      // First, try to get employee data from authTasks
+      const authTasksStored = localStorage.getItem('authTasks')
+      if (authTasksStored) {
+        const authTasks = JSON.parse(authTasksStored)
 
         if (authTasks.user) {
           setUserData({
             name: authTasks.user.name || authTasks.user.email.split('@')[0],
             email: authTasks.user.email,
           })
-        } else {
-          // Fallback to parsing token if user data isn't stored separately
-          const token = authTasks.token
-          if (token) {
-            const base64Url = token.split('.')[1]
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-            const payload = JSON.parse(atob(base64))
-            setUserData({
-              name: payload.name || payload.email.split('@')[0],
-              email: payload.email,
-            })
-          }
+          return // Exit early if employee data found
+        }
+      }
+
+      // If no employee data, try to get HR token data
+      const hrToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+      if (hrToken) {
+        try {
+          // Decode JWT token to get user info
+          const base64Url = hrToken.split('.')[1]
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const payload = JSON.parse(atob(base64))
+
+          setUserData({
+            name: payload.name || payload.email?.split('@')[0] || 'HR User',
+            email: payload.email || '',
+          })
+        } catch (tokenError) {
+          console.error('Failed to decode HR token:', tokenError)
+          // If token decoding fails, set a default HR user
+          setUserData({
+            name: 'HR User',
+            email: '',
+          })
         }
       }
     } catch (error) {
-      console.error('Failed to parse authTasks data:', error)
+      console.error('Failed to parse user data:', error)
     }
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('authTasks')
+    navigate('/login')
     localStorage.removeItem('authToken')
     sessionStorage.removeItem('authToken')
-    navigate('/login')
+    // Navigate to login and replace the entire history stack
+    navigate('/login', { replace: true })
+
+    // Optional: Clear the entire history stack
+    window.history.replaceState(null, null, '/login')
   }
 
   const handleMyTasksClick = () => {

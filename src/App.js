@@ -10,6 +10,7 @@ import Clients from './components/pages/clients/Clients'
 import StarterPage from './components/pages/starter-page/StarterPage'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoutes from './ProtectedRouts'
 
 const App = () => {
   return (
@@ -18,19 +19,45 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<StarterPage />} />
-          {/* Protected routes */}
+
+          {/* HR-only protected routes */}
           <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route
+              path="/employees"
+              element={
+                <ProtectedRoutes>
+                  <Employees />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoutes>
+                  <Reports />
+                </ProtectedRoutes>
+              }
+            />
           </Route>
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/clients" element={<Clients />} />
-          {/* ............................................................................. */}
-          <Route path="/my-tasks" element={<Tasks myTasksView={true} />} />{' '}
-          {/* <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
-            <Route path="/tasks" element={<Tasks />} />
-          </Route> */}
-          {/* ................................................................................... */}
+
+          {/* Routes accessible by both HR and employees */}
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoutes>
+                <Tasks />
+              </ProtectedRoutes>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoutes>
+                <Clients />
+              </ProtectedRoutes>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
