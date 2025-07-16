@@ -6,7 +6,7 @@ import { UncontrolledTooltip } from 'reactstrap'
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
 import { ModalMaker } from '../../../ui'
-import { format } from 'date-fns'
+import { format, isSameDay } from 'date-fns'
 import { Tooltip } from 'reactstrap'
 import check from '/assets/images/check.png'
 import pending from '/assets/images/expired.png'
@@ -330,12 +330,62 @@ const TasksContent = () => {
       createdAt: new Date().toISOString(),
     })
   }
+  const validateTaskDateTime = (selectedDate, startTime) => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    // Check if selected date is before today
+    const taskDate = new Date(selectedDate)
+    const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate())
+
+    if (taskDay < today) {
+      return {
+        isValid: false,
+        message: 'Cannot create tasks for past dates',
+      }
+    }
+
+    // If it's today, check the time
+    if (isSameDay(taskDate, today)) {
+      // Parse the start time
+      const [timePart, period] = startTime.includes(' ') ? startTime.split(' ') : [startTime, null]
+      const [hoursStr, minutesStr = '0'] = timePart.split(':')
+      let hours = parseInt(hoursStr, 10)
+      const minutes = parseInt(minutesStr, 10)
+
+      // Convert to 24-hour format
+      if (period === 'PM' && hours < 12) hours += 12
+      if (period === 'AM' && hours === 12) hours = 0
+
+      // Create task time
+      const taskTime = new Date()
+      taskTime.setHours(hours, minutes, 0, 0)
+
+      // Compare with current time
+      if (taskTime < now) {
+        return {
+          isValid: false,
+          message: 'Cannot create tasks with start time in the past',
+        }
+      }
+    }
+
+    return {
+      isValid: true,
+    }
+  }
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
-
+      const validation = validateTaskDateTime(selectedDate, formData.startTime)
+      if (!validation.isValid) {
+        setTooltipMessage(validation.message)
+        setTooltipOpen(true)
+        setTimeout(() => setTooltipOpen(false), 4000)
+        return
+      }
       // Convert time string to Egypt ISO format
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
