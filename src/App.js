@@ -41,14 +41,15 @@ const App = () => {
           </Route>
 
           {/* Routes accessible by both HR and employees */}
-          <Route
+          {/* <Route
             path="/tasks"
             element={
               <ProtectedRoutes>
                 <Tasks />
               </ProtectedRoutes>
             }
-          />
+          /> */}
+          <Route path="/tasks" element={<Tasks />} />
           <Route
             path="/clients"
             element={

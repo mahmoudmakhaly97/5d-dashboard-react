@@ -51,24 +51,34 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [allowCreateTask, setAllowCreateTask] = useState(true)
   const [selectedDayForNewTask, setSelectedDayForNewTask] = useState<Date>(() => new Date())
 
-  const handleNextWeek = () => {
+  const handleNextWeek = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
     setCurrentWeekOffset((prev) => prev + 1)
     setAllowCreateTask(true)
     onAllowCreateTaskChange?.(true)
   }
 
-  const handlePrevWeek = () => {
+  const handlePrevWeek = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
     setCurrentWeekOffset((prev) => prev - 1)
     setAllowCreateTask(false)
     onAllowCreateTaskChange?.(false)
   }
-
   const handleCurrentWeek = () => {
     setCurrentWeekOffset(0)
     setAllowCreateTask(true)
     onAllowCreateTaskChange?.(true)
-  }
 
+    // Only select today if we're explicitly clicking "Current Week"
+    const today = new Date()
+    setSelectedDayForNewTask(today)
+    setSelectedDate(today)
+    if (onDateSelect) {
+      onDateSelect(today)
+    }
+  }
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -77,20 +87,25 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
     return () => clearInterval(interval)
   }, [])
-  const handleDayClick = (date: Date) => {
+
+  const handleDayClick = (date: Date, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation()
+      event.preventDefault()
+    }
+
+    console.log('Date clicked:', date) // For debugging
+
+    // Always update both selected states when clicking a date
     setSelectedDayForNewTask(date)
     setSelectedDate(date)
-
-    if (onDateSelect) {
-      onDateSelect(date)
-    }
   }
   const handleCreateTask = (taskData: Partial<Task>) => {
     if (!selectedDayForNewTask) return
 
     const newTask: Task = {
       ...taskData,
-      date: selectedDayForNewTask.toISOString(),
+      date: selectedDayForNewTask.toISOString(), // Use the selected date
       // other task properties
     }
 
@@ -98,6 +113,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     // Then refresh the tasks list
     fetchData()
   }
+
   const handleDeleteClick = (task: Task) => {
     setSelectedTaskToDelete(task)
     setShowDeleteModal(true)
@@ -117,7 +133,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer  ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
           },
         },
       )
@@ -252,6 +268,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       }
     }
   }, [employee])
+
   return (
     <div className="relative w-full  p-4">
       <div className="flex flex-wrap mb-4 justify-between items-start w-full px-4 sm:px-[20px]">
@@ -377,8 +394,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                         {/* Date header */}
                         <div
                           className={`h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
-                  ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm' : ''}`}
-                          onClick={() => handleDayClick(date)}
+    ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm bg-blue-50 text-blue-600' : ''}`}
+                          onClick={(e) => handleDayClick(date, e)}
                         >
                           <div className="flex flex-col items-center">
                             <span className="text-sm font-medium">{format(date, 'EEE')}</span>

@@ -98,7 +98,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -277,7 +277,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         {/* Main content area */}
         <div className="flex flex-1 h-full overflow-x-hidden relative">
           {/* Desktop sidebar */}
-          <div className="hidden lg:block w-64 border-r overflow-auto bg-muted/10 p-4">
+          <div className="hidden lg:block w-[18rem] border-r overflow-auto bg-muted/10 p-4">
             <Accordion type="multiple" className="w-full">
               {departments.map((department) => (
                 <AccordionItem key={department.id} value={department.id}>
