@@ -18,6 +18,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { addWeeks, subWeeks } from 'date-fns'
+import { useDatePermission } from '@/context/DatePermissionContext'
 import { Button } from '../ui/button'
 import './index.scss'
 import { BASE_URL } from './../../api/base'
@@ -57,7 +58,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
-  const [allowCreateTask, setAllowCreateTask] = useState(true)
+  const { setAllowCreateTask: setAllowCreateTaskCtx, setSelectedDate: setCtxSelectedDate } =
+    useDatePermission()
   const [selectedDayForNewTask, setSelectedDayForNewTask] = useState<Date>(() => new Date())
 
   const handleNextWeek = () => {
@@ -68,10 +70,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     setSelectedDate(newSelectedDate)
     setSelectedDayForNewTask(newSelectedDate)
 
-    // Allow task creation only if the new week is not in the future
-    const isFutureWeek = isAfter(newSelectedDate, endOfWeek(new Date()))
-    setAllowCreateTask(!isFutureWeek)
+    const toUTCDateOnly = (date: Date) =>
+      new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+
+    // Allow task creation only if the new week is not in the future (UTC based)
+    const isFutureWeek = isAfter(toUTCDateOnly(newSelectedDate), toUTCDateOnly(endOfWeek(new Date())))
+    setAllowCreateTaskCtx(!isFutureWeek)
     onAllowCreateTaskChange?.(!isFutureWeek)
+    setCtxSelectedDate(newSelectedDate)
   }
 
   const handlePrevWeek = () => {
@@ -82,13 +88,17 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     setSelectedDate(newSelectedDate)
     setSelectedDayForNewTask(newSelectedDate)
 
+    const toUTCDateOnly = (date: Date) =>
+      new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+
     // Allow task creation only if the selected week is within the allowed past range (1 week)
-    const isWithinAllowedPast = isWithinInterval(newSelectedDate, {
+    const isWithinAllowedPast = isWithinInterval(toUTCDateOnly(newSelectedDate), {
       start: subWeeks(startOfWeek(new Date()), 1),
       end: endOfWeek(new Date()),
     })
-    setAllowCreateTask(isWithinAllowedPast)
+    setAllowCreateTaskCtx(isWithinAllowedPast)
     onAllowCreateTaskChange?.(isWithinAllowedPast)
+    setCtxSelectedDate(newSelectedDate)
   }
 
   const handleCurrentWeek = () => {
@@ -98,8 +108,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     setSelectedDate(today)
     setSelectedDayForNewTask(today)
 
-    setAllowCreateTask(true)
+    setAllowCreateTaskCtx(true)
     onAllowCreateTaskChange?.(true)
+    setCtxSelectedDate(today)
   }
 
   // Update current time every second
@@ -121,8 +132,17 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       end: new Date(),
     })
 
-    setAllowCreateTask(isAllowed)
-    onAllowCreateTaskChange?.(isAllowed)
+    // Additional weekend / holiday validation
+    const HOLIDAYS_UTC = ['2024-01-01', '2024-04-25', '2024-05-01']
+    const isWeekend = date.getUTCDay() === 0 || date.getUTCDay() === 6
+    const isHoliday = HOLIDAYS_UTC.includes(date.toISOString().split('T')[0])
+
+    const finalAllowed = isAllowed && !isWeekend && !isHoliday
+
+    setAllowCreateTaskCtx(finalAllowed)
+    onAllowCreateTaskChange?.(finalAllowed)
+
+    setCtxSelectedDate(date)
 
     if (onDateSelect) {
       onDateSelect(date)

@@ -336,16 +336,44 @@ const TasksContent = () => {
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
 
-      // Validate selected date: cannot be more than 1 week in the past or in the future
-      const oneWeekAgo = subWeeks(new Date(), 1)
-      if (isBefore(selectedDate, oneWeekAgo)) {
+      // Helper to strip time and convert to UTC midnight
+      const toUTCDateOnly = (date) =>
+        new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+
+      const utcToday = toUTCDateOnly(new Date())
+      const utcSelected = toUTCDateOnly(selectedDate)
+
+      // Validate selected date: cannot be more than 1 week in the past or in the future (using UTC)
+      const oneWeekAgoUTC = subWeeks(utcToday, 1)
+      if (isBefore(utcSelected, oneWeekAgoUTC)) {
         setModalMessage('Cannot create tasks more than one week in the past')
         setModalMessageVisible(true)
         return
       }
 
-      if (isAfter(selectedDate, new Date())) {
+      if (isAfter(utcSelected, utcToday)) {
         setModalMessage('Cannot create tasks in the future')
+        setModalMessageVisible(true)
+        return
+      }
+
+      // Disallow weekends (Saturday=6, Sunday=0 in UTC)
+      const dayOfWeek = utcSelected.getUTCDay()
+      if (dayOfWeek === 6 || dayOfWeek === 0) {
+        setModalMessage('Cannot create tasks on weekends')
+        setModalMessageVisible(true)
+        return
+      }
+
+      // Disallow holidays
+      const HOLIDAYS_UTC = [
+        '2024-01-01', // New Year
+        '2024-04-25', // Sinai Liberation Day (example)
+        '2024-05-01', // Labour Day
+      ]
+      const selectedISODate = utcSelected.toISOString().split('T')[0]
+      if (HOLIDAYS_UTC.includes(selectedISODate)) {
+        setModalMessage('Cannot create tasks on holidays')
         setModalMessageVisible(true)
         return
       }
@@ -387,9 +415,17 @@ const TasksContent = () => {
         return
       }
 
-      // Determine approval conditions
+      // Determine approval conditions and validate working hours
       const taskStartHour = parseHourFromTimeString(formData.startTime)
-      const isAfter6PM = taskStartHour >= 18 // Now checking the task's start time, not current time
+
+      // Working hours are 10 AM - 6 PM (inclusive start, exclusive end)
+      if (taskStartHour < 10 || taskStartHour >= 18) {
+        setModalMessage('Task time must be within working hours (10:00 AM - 6:00 PM)')
+        setModalMessageVisible(true)
+        return
+      }
+
+      const isAfter6PM = taskStartHour >= 18 // re-check for approval logic, although blocked above
       const isAccountManager = () => {
         const authData = JSON.parse(localStorage.getItem('authData'))
         return authData?.role === 'AccountManager' || authData?.role === 'Account Manager'

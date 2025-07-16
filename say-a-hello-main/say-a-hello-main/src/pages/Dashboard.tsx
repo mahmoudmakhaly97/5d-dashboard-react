@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import TaskTimeline from '@/components/dashboard/TaskTimeline'
+import { DatePermissionProvider } from '@/context/DatePermissionContext'
 import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import './Dashboard.css'
@@ -430,18 +431,20 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
                 </div>
               </div>
             ) : (
-              <TaskTimeline
-                department={selectedDepartment}
-                employee={selectedEmployee}
-                currentDate={currentDate}
-                onDateSelect={(date) => setCurrentDate(date)}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask}
-                onAllowCreateTaskChange={handleAllowCreateTaskChange}
-                showOnlyMyTasks={showOnlyMyTasks}
-                currentUserId={currentUserId}
-                managerTeam={managerTeam}
-              />
+              <DatePermissionProvider>
+                <TaskTimeline
+                  department={selectedDepartment}
+                  employee={selectedEmployee}
+                  currentDate={currentDate}
+                  onDateSelect={(date) => setCurrentDate(date)}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask}
+                  onAllowCreateTaskChange={handleAllowCreateTaskChange}
+                  showOnlyMyTasks={showOnlyMyTasks}
+                  currentUserId={currentUserId}
+                  managerTeam={managerTeam}
+                />
+              </DatePermissionProvider>
             )}
           </div>
         </div>
