@@ -110,7 +110,7 @@ const TasksContent = () => {
       try {
         const response = await fetch(`${BASE_URL}/Employee/GetManagerTeam`, {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
           },
         })
 
@@ -140,7 +140,7 @@ const TasksContent = () => {
       // Fetch clients
       const clientsResponse = await fetch(`${BASE_URL}/Clients/GetAllClients`, {
         headers: {
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
       })
       const clientsData = await clientsResponse.json()
@@ -174,7 +174,7 @@ const TasksContent = () => {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
         body: JSON.stringify(taskId),
       })
@@ -330,42 +330,38 @@ const TasksContent = () => {
       createdAt: new Date().toISOString(),
     })
   }
-  const validateTaskDateTime = (selectedDate, startTime) => {
+  const validateTaskDateTime = (selectedDate, startTime, isEdit = false) => {
     const now = new Date()
+    const currentTime = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+      now.getMinutes(),
+    )
+
+    // Parse the selected date
+    const taskDate = new Date(selectedDate)
+    const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate())
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     // Check if selected date is before today
-    const taskDate = new Date(selectedDate)
-    const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate())
-
     if (taskDay < today) {
       return {
         isValid: false,
-        message: 'Cannot create tasks for past dates',
+        message: 'Cannot create/edit tasks for past dates',
       }
     }
 
     // If it's today, check the time
-    if (isSameDay(taskDate, today)) {
+    if (taskDay.getTime() === today.getTime()) {
       // Parse the start time
-      const [timePart, period] = startTime.includes(' ') ? startTime.split(' ') : [startTime, null]
-      const [hoursStr, minutesStr = '0'] = timePart.split(':')
-      let hours = parseInt(hoursStr, 10)
-      const minutes = parseInt(minutesStr, 10)
+      const taskDateTime = parseTimeStringToDateTime(startTime, taskDate)
 
-      // Convert to 24-hour format
-      if (period === 'PM' && hours < 12) hours += 12
-      if (period === 'AM' && hours === 12) hours = 0
-
-      // Create task time
-      const taskTime = new Date()
-      taskTime.setHours(hours, minutes, 0, 0)
-
-      // Compare with current time
-      if (taskTime < now) {
+      if (taskDateTime <= currentTime) {
         return {
           isValid: false,
-          message: 'Cannot create tasks with start time in the past',
+          message: `Cannot ${isEdit ? 'edit' : 'create'} tasks with start time in the past`,
         }
       }
     }
@@ -374,12 +370,35 @@ const TasksContent = () => {
       isValid: true,
     }
   }
+  const parseTimeStringToDateTime = (timeStr, date) => {
+    if (!timeStr || !date) return null
+
+    const [timePart, period] = timeStr.includes(' ') ? timeStr.split(' ') : [timeStr, null]
+    const [hoursStr, minutesStr = '0'] = timePart.split(':')
+    let hours = parseInt(hoursStr, 10)
+    const minutes = parseInt(minutesStr, 10)
+
+    // Convert to 24-hour format
+    if (period === 'PM' && hours < 12) hours += 12
+    if (period === 'AM' && hours === 12) hours = 0
+
+    // Create task time
+    const taskTime = new Date(date)
+    taskTime.setHours(hours, minutes, 0, 0)
+
+    return taskTime
+  }
+  const isTaskInPast = (taskStartTime) => {
+    const now = new Date()
+    const taskTime = new Date(taskStartTime)
+    return taskTime <= now
+  }
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
-      const validation = validateTaskDateTime(selectedDate, formData.startTime)
+      const validation = validateTaskDateTime(selectedDate, formData.startTime, false)
       if (!validation.isValid) {
         setTooltipMessage(validation.message)
         setTooltipOpen(true)
@@ -452,7 +471,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
         body: JSON.stringify(apiData),
       })
@@ -512,7 +531,7 @@ const TasksContent = () => {
 
       const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${taskId.id}`, {
         headers: {
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
       })
 
@@ -536,7 +555,11 @@ const TasksContent = () => {
         setModalMessageVisible(true)
         return
       }
-
+      if (isTaskInPast(taskData.startTime)) {
+        setModalMessage('Cannot edit tasks that have already started or are in the past.')
+        setModalMessageVisible(true)
+        return
+      }
       // Format times
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
       const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
@@ -574,6 +597,15 @@ const TasksContent = () => {
     if (!taskToEdit) return
 
     try {
+      const selectedDate =
+        dashboardRef.current?.getSelectedDate?.() || new Date(taskToEdit.startTime)
+      const validation = validateTaskDateTime(selectedDate, formData.startTime, true)
+      if (!validation.isValid) {
+        setTooltipMessage(validation.message)
+        setTooltipOpen(true)
+        setTimeout(() => setTooltipOpen(false), 4000)
+        return
+      }
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
 
@@ -636,7 +668,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
         },
         body: JSON.stringify(apiData),
       })

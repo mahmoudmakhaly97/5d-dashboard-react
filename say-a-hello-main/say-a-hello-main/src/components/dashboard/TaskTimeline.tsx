@@ -50,31 +50,37 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
   const [allowCreateTask, setAllowCreateTask] = useState(true)
   const [selectedDayForNewTask, setSelectedDayForNewTask] = useState<Date>(() => new Date())
+  const [isViewingCurrentWeek, setIsViewingCurrentWeek] = useState(true)
 
+  const hourHeight = 120 // Increased row height (was 103)
+
+  const hours = Array.from({ length: 9 }, (_, i) => i + 10) // 10 AM to 6 PM (9 hours)
   const handleNextWeek = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
     setCurrentWeekOffset((prev) => prev + 1)
-    setAllowCreateTask(true)
-    onAllowCreateTaskChange?.(true)
+    setIsViewingCurrentWeek(false)
+    setAllowCreateTask(false)
+    onAllowCreateTaskChange?.(false)
   }
 
   const handlePrevWeek = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
     setCurrentWeekOffset((prev) => prev - 1)
+    setIsViewingCurrentWeek(false)
     setAllowCreateTask(false)
     onAllowCreateTaskChange?.(false)
   }
   const handleCurrentWeek = () => {
     setCurrentWeekOffset(0)
-    setAllowCreateTask(true)
-    onAllowCreateTaskChange?.(true)
-
-    // Only select today if we're explicitly clicking "Current Week"
+    setIsViewingCurrentWeek(true)
     const today = new Date()
     setSelectedDayForNewTask(today)
     setSelectedDate(today)
+    setAllowCreateTask(true)
+    onAllowCreateTaskChange?.(true)
+
     if (onDateSelect) {
       onDateSelect(today)
     }
@@ -94,24 +100,16 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       event.preventDefault()
     }
 
-    console.log('Date clicked:', date) // For debugging
-
-    // Always update both selected states when clicking a date
+    setCurrentWeekOffset(0)
     setSelectedDayForNewTask(date)
     setSelectedDate(date)
-  }
-  const handleCreateTask = (taskData: Partial<Task>) => {
-    if (!selectedDayForNewTask) return
 
-    const newTask: Task = {
-      ...taskData,
-      date: selectedDayForNewTask.toISOString(), // Use the selected date
-      // other task properties
+    if (onDateSelect) {
+      onDateSelect(date)
     }
 
-    // Call your API to create the task
-    // Then refresh the tasks list
-    fetchData()
+    setAllowCreateTask(true)
+    onAllowCreateTaskChange?.(true)
   }
 
   const handleDeleteClick = (task: Task) => {
@@ -133,7 +131,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
           },
         },
       )
@@ -215,8 +213,6 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const employeesWithTasksToday = getEmployeesWithTasksToday()
 
-  const hours = Array.from({ length: 9 }, (_, i) => i + 10) // 10 AM to 6 PM (9 hours)
-
   const calculateTaskPosition = (task: Task) => {
     const timeParts = task.time.split(':')
     const hour = parseInt(timeParts[0])
@@ -224,9 +220,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     const isPM = task.time.toLowerCase().includes('pm')
 
     const hourIn24 = isPM && hour !== 12 ? hour + 12 : hour === 12 && !isPM ? 0 : hour
-    const topPosition = (hourIn24 - 10) * 96 + (minute * 96) / 60
+    const topPosition = (hourIn24 - 9.5) * hourHeight + (minute * hourHeight) / 60
 
-    let heightInMinutes = 60
+    let heightInMinutes = hourHeight // Default to 1 hour height
     if (task.endTime) {
       const endTimeParts = task.endTime.split(':')
       const endHour = parseInt(endTimeParts[0])
@@ -235,7 +231,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
       const endHourIn24 =
         isEndPM && endHour !== 12 ? endHour + 12 : endHour === 12 && !isEndPM ? 0 : endHour
-      const endPosition = (endHourIn24 - 10) * 96 + (endMinute * 96) / 60
+      const endPosition = (endHourIn24 - 10) * hourHeight + (endMinute * hourHeight) / 60
       heightInMinutes = endPosition - topPosition
     }
 
@@ -244,7 +240,6 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const calculateStopwatchPosition = () => {
     const startHour = 10
-    const hourHeight = 96
     const currentHour = currentTime.getHours()
     const currentMinute = currentTime.getMinutes()
 
@@ -328,14 +323,16 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
       {/* Timeline structure */}
       {/* ...................................................................... */}
-      <div className="relative min-h-[600px]  ">
+      <div className="relative min-h-[calc(9*120px)]">
         {/* Main timeline layout */}
         <div className="flex">
           {/* Hour lines column */}
 
           <div className="w-16 flex-shrink-0">
             {hours.map((hour) => (
-              <div key={hour} className="h-24 flex items-end">
+              <div key={hour} className="h-[120px] flex items-end">
+                {' '}
+                {/* Increased height */}
                 <div className="text-xs text-gray-500 pr-2 text-right w-full">
                   {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
                 </div>
@@ -353,17 +350,17 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
               }}
             >
               {/* Weekly view for selected employee */}
-              <div className="rotate-180 w-full min-w-max ">
+              <div className="rotate-180 w-full min-w-max">
                 {employee && dateRange.length > 1 && (
                   <div className="flex relative">
                     {/* Hour markers - placed here to span all date columns */}
                     <div className="absolute left-0 right-0 h-full pointer-events-none">
-                      {Array.from({ length: 24 }).map((_, hour) => (
+                      {hours.map((hour) => (
                         <div
                           key={hour}
                           className="border-t border-gray-200"
                           style={{
-                            top: `${hour * 90}px`, // Assuming 60px per hour
+                            top: `${(hour - 9.2) * hourHeight}px`,
                             position: 'absolute',
                             width: '100%',
                           }}
@@ -393,7 +390,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       >
                         {/* Date header */}
                         <div
-                          className={`h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
+                          className={` h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
     ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm bg-blue-50 text-blue-600' : ''}`}
                           onClick={(e) => handleDayClick(date, e)}
                         >
@@ -406,7 +403,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                         </div>
 
                         {/* Tasks for this date */}
-                        <div className="relative h-screen">
+                        <div className="relative h-[calc(9*120px)]">
                           {tasks
                             .filter(
                               (task) => isSameDay(new Date(task.date), date) && !isBefore10AM(task),
@@ -423,7 +420,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                     minHeight: '40px',
                                     maxHeight: '200px',
                                     width: 'calc(100% - 8px)',
-                                    left: '4px',
+                                    left: '0px',
                                   }}
                                 >
                                   <TaskCard task={task} employee={employee} />
@@ -434,7 +431,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                   />
                                   <Pencil
                                     size={19}
-                                    className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    className="absolute top-[5rem] right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                     onClick={() => onEditTask(task)}
                                   />
                                 </div>
@@ -451,12 +448,12 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                   <div className="flex">
                     {/* Hour markers for department view */}
                     <div className="absolute left-0 right-0 h-full pointer-events-none">
-                      {Array.from({ length: 24 }).map((_, hour) => (
+                      {hours.map((hour) => (
                         <div
                           key={hour}
-                          className="border-b border-gray-200"
+                          className="border-t border-gray-200"
                           style={{
-                            top: `${hour * 90}px`, // Assuming 60px per hour
+                            top: `${(hour - 10) * hourHeight}px`,
                             position: 'absolute',
                             width: '100%',
                           }}
@@ -489,7 +486,9 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                           </div>
                         </div>
                         {/* Tasks for this employee */}
-                        <div className="relative sm:h-screen">
+                        <div className="relative h-[calc(9*120px)]">
+                          {' '}
+                          {/* Adjusted height */}
                           {(emp.tasks || [])
                             .filter(
                               (task) =>
@@ -502,12 +501,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                   key={taskIndex}
                                   className="absolute mx-1 group TaskCard"
                                   style={{
-                                    top: `${top}px`,
+                                    top: `${top * 1.04}px`,
                                     height: `${height}px`,
                                     minHeight: '40px',
-                                    maxHeight: '200px',
                                     width: 'calc(100% - 8px)',
-                                    left: '4px',
+                                    left: '0px',
                                   }}
                                 >
                                   <TaskCard
@@ -524,7 +522,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                   />
                                   <Pencil
                                     size={19}
-                                    className="absolute top-10 right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    className="absolute top-[5rem] right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                     onClick={() => onEditTask(task)}
                                   />
                                 </div>

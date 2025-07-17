@@ -25,8 +25,7 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
     <>
       <div>
         <div
-          style={{ marginLeft: '00px' }}
-          className={` rounded-md p-3 mb-3 cursor-pointer  TaskCard ${getBgColor()}`}
+          className={` rounded-md p-3 mb-3 cursor-pointer h-[7rem]  TaskCard ${getBgColor()}`}
           onClick={() => setIsOpen(true)}
         >
           <div className="flex items-center gap-3">
