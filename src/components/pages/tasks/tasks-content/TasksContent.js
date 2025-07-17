@@ -881,7 +881,7 @@ const TasksContent = () => {
               {authTasks?.role === 'Account Manager'
                 ? 'Account Managers can add tasks for any employee'
                 : managerTeam.length === 0
-                  ? 'Loading team information...'
+                  ? 'You can only add tasks for members of your team or their subordinates'
                   : 'You can only add tasks for members of your team or their subordinates'}
             </UncontrolledTooltip>
           </div>
