@@ -110,7 +110,7 @@ const TasksContent = () => {
       try {
         const response = await fetch(`${BASE_URL}/Employee/GetManagerTeam`, {
           headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+            Authorization: `Bearer ${authTasks.token}`,
           },
         })
 
@@ -140,7 +140,7 @@ const TasksContent = () => {
       // Fetch clients
       const clientsResponse = await fetch(`${BASE_URL}/Clients/GetAllClients`, {
         headers: {
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
       })
       const clientsData = await clientsResponse.json()
@@ -174,7 +174,7 @@ const TasksContent = () => {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+          Authorization: `Bearer   ${authTasks.token}`,
         },
         body: JSON.stringify(taskId),
       })
@@ -471,7 +471,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
@@ -531,7 +531,7 @@ const TasksContent = () => {
 
       const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${taskId.id}`, {
         headers: {
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
       })
 
@@ -597,8 +597,9 @@ const TasksContent = () => {
     if (!taskToEdit) return
 
     try {
-      const selectedDate =
-        dashboardRef.current?.getSelectedDate?.() || new Date(taskToEdit.startTime)
+      // FIX: Use the original task's date instead of the currently selected date
+      const selectedDate = new Date(taskToEdit.startTime) // Always use the original task's date
+
       const validation = validateTaskDateTime(selectedDate, formData.startTime, true)
       if (!validation.isValid) {
         setTooltipMessage(validation.message)
@@ -606,6 +607,7 @@ const TasksContent = () => {
         setTimeout(() => setTooltipOpen(false), 4000)
         return
       }
+
       const convertToEgyptISOTime = (timeStr, date = selectedDate) => {
         if (!timeStr || !date) return null
 
@@ -658,7 +660,7 @@ const TasksContent = () => {
         updatedByEmployeeId: Number(formData.updatedByEmployeeId || formData.createdByEmployeeId),
         departmentId: Number(formData.departmentId || selectedEmployee?.departmentId || 0),
         slotCount: Number(formData.slotCount),
-        clientId: formData.clientId, // Make sure this is included
+        clientId: formData.clientId,
         startTime: convertToEgyptISOTime(formData.startTime),
         endTime: formData.endTime ? convertToEgyptISOTime(formData.endTime) : null,
         createdAt: formData.createdAt,
@@ -668,7 +670,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0Iiwic3ViIjoiMTQiLCJlbWFpbCI6ImFobWVkLm5vYW1hbkA1ZC1hZ2VuY3kuY29tIiwianRpIjoiMjY0ZGZhYmUtMGQ0OS00OTY5LTgxNTItNDdlOGE5YTc5YTgzIiwiZXhwIjoxNzUzMDIxMjY1LCJpc3MiOiJBdHRlbmRhbmNlQXBwIiwiYXVkIjoiQXR0ZW5kYW5jZUFwaVVzZXIifQ.r5BlDKWihHilr9Pa6ybY3SCznpE7yGLUzcnUi-a3Vtw`,
+          Authorization: `Bearer   ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })
