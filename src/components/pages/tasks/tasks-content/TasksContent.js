@@ -525,21 +525,17 @@ const TasksContent = () => {
   }, [taskCreated])
   const handleEditTask = async (taskId) => {
     try {
-      // Validate taskId
-
-      console.log('Fetching task with ID:', taskId) // Debug log
+      console.log('Fetching task with ID:', taskId)
 
       const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${taskId.id}`, {
         headers: {
-          Authorization: `Bearer  ${authTasks.token}`,
+          Authorization: `Bearer ${authTasks.token}`,
         },
       })
 
       if (!response.ok) {
-        // Try to get error details from response
         const errorData = await response.json().catch(() => ({}))
-        console.error('API Error Details:', errorData) // Debug log
-
+        console.error('API Error Details:', errorData)
         throw new Error(
           errorData.message ||
             errorData.title ||
@@ -548,21 +544,39 @@ const TasksContent = () => {
       }
 
       const taskData = await response.json()
-      console.log('Task Data Received:', taskData) // Debug log
+      console.log('Task Data Received:', taskData)
 
       if (taskData.status === 'Completed') {
         setModalMessage('This task is already completed and cannot be edited.')
         setModalMessageVisible(true)
         return
       }
+
       if (isTaskInPast(taskData.startTime)) {
         setModalMessage('Cannot edit tasks that have already started or are in the past.')
         setModalMessageVisible(true)
         return
       }
+
       // Format times
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
       const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
+
+      // **FIX: Ensure clientId is converted to string to match select options**
+      const clientId = taskData.clientId ? String(taskData.clientId) : ''
+
+      // **DEBUG: Log the clientId and available clients**
+      console.log('Task clientId:', clientId)
+      console.log(
+        'Available clients:',
+        clients.map((c) => ({ id: c.id, stringId: String(c.id) })),
+      )
+
+      // **FIX: Verify the client exists in the clients array**
+      const clientExists = clients.some((client) => String(client.id) === clientId)
+      if (!clientExists && clientId) {
+        console.warn('Client not found in clients array:', clientId)
+      }
 
       // Update state
       setTaskToEdit(taskData)
@@ -577,7 +591,7 @@ const TasksContent = () => {
         departmentId: taskData.departmentId || 0,
         departmentName: taskData.departmentName || '',
         slotCount: taskData.slotCount || 1,
-        clientId: taskData.clientId || '',
+        clientId: clientId, // **Use the converted string value**
         startTime: startTime,
         endTime: endTime,
         createdAt: taskData.createdAt || new Date().toISOString(),
@@ -670,7 +684,7 @@ const TasksContent = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
         body: JSON.stringify(apiData),
       })

@@ -31,7 +31,7 @@ const ClientsContent = () => {
         setIsLoading(true)
         const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer   ${authTasks.token}`,
           },
         })
         setClients(response.data)
