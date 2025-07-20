@@ -73,6 +73,8 @@ const TasksContent = () => {
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
   const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
+  // In TasksContent.js, add this useEffect at the top of the component
+  // Add this useEffect near the top of your TasksContent component
 
   useEffect(() => {
     try {
@@ -394,6 +396,16 @@ const TasksContent = () => {
     return taskTime <= now
   }
   const handleSubmit = async (e) => {
+    if (
+      String(formData.assignedToEmployeeId) === String(currentUserId) &&
+      authTasks?.role !== 'Account Manager'
+    ) {
+      setTooltipMessage('Regular employees cannot assign tasks to themselves')
+      setTooltipOpen(true)
+      setTimeout(() => setTooltipOpen(false), 4000)
+      return
+    }
+
     e.preventDefault()
 
     try {
@@ -823,19 +835,15 @@ const TasksContent = () => {
       return true
     }
 
-    // Allow users to add tasks for themselves
+    // Prevent users from adding tasks for themselves
     if (currentUserId && String(employeeId) === String(currentUserId)) {
-      return true
+      return false
     }
-
     // Check if employee is in manager's direct team
     const isDirectTeamMember = managerTeam.some(
       (teamMember) => String(teamMember.id) === String(employeeId),
     )
-
-    // Check if employee is a sub-employee (managed by any of the manager's direct reports)
     const isSubEmployee = employees.some((emp) => {
-      // Check if this employee is managed by someone in the manager's team
       const isManagedByTeamMember = managerTeam.some(
         (teamMember) => String(teamMember.id) === String(emp.managerId),
       )
@@ -865,15 +873,41 @@ const TasksContent = () => {
   return (
     <div className="tasks-container  ">
       {selectedEmployee?.id && selectedEmployee?.name ? (
+        // Account Managers can always add tasks
         authTasks?.role === 'Account Manager' ? (
           <Button color="primary" onClick={toggle} className="add-task">
             Add Task for {selectedEmployee.name}
           </Button>
-        ) : isEmployeeInManagerTeam(selectedEmployee.id) ? (
+        ) : // For non-managers, check if they're trying to add task to themselves
+        String(selectedEmployee.id) === String(currentUserId) ? (
+          <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+            <span
+              id="selfTaskTooltip"
+              style={{
+                display: 'inline-block',
+                cursor: 'not-allowed',
+              }}
+            >
+              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
+                Add Task for Myself
+              </Button>
+            </span>
+            <UncontrolledTooltip
+              target="selfTaskTooltip"
+              placement="top"
+              delay={{ show: 0, hide: 0 }}
+              fade={true}
+            >
+              Regular employees cannot add tasks for themselves. Please contact your manager.
+            </UncontrolledTooltip>
+          </div>
+        ) : // For non-managers adding tasks to others in their team
+        isEmployeeInManagerTeam(selectedEmployee.id) ? (
           <Button color="primary" onClick={toggle} className="add-task">
             Add Task for {selectedEmployee.name}
           </Button>
         ) : (
+          // For non-managers trying to add tasks to unauthorized employees
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
               id="disabledButtonWrapper"
@@ -882,21 +916,17 @@ const TasksContent = () => {
                 cursor: 'not-allowed',
               }}
             >
-              <Button color="primary" disabled style={{ pointerEvents: 'none' }}>
+              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
                 Add Task for {selectedEmployee?.name}
               </Button>
             </span>
             <UncontrolledTooltip
               target="disabledButtonWrapper"
               placement="top"
-              delay={{ show: 0, hide: 0 }} // Remove delays
+              delay={{ show: 0, hide: 0 }}
               fade={true}
             >
-              {authTasks?.role === 'Account Manager'
-                ? 'Account Managers can add tasks for any employee'
-                : managerTeam.length === 0
-                  ? 'You can only add tasks for members of your team or their subordinates'
-                  : 'You can only add tasks for members of your team or their subordinates'}
+              You can only add tasks for members of your team or their subordinates
             </UncontrolledTooltip>
           </div>
         )
