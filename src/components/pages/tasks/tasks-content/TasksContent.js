@@ -964,12 +964,7 @@ const TasksContent = () => {
                 cursor: 'not-allowed',
               }}
             >
-              <Button
-                color="primary"
-                disabled
-                style={{ pointerEvents: 'none', opacity: 0.5 }}
-                className="mt-4"
-              >
+              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
                 Add Task for Myself
               </Button>
             </span>
@@ -984,7 +979,7 @@ const TasksContent = () => {
           </div>
         ) : // For non-managers adding tasks to others in their team
         isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task mt-4">
+          <Button color="primary" onClick={toggle} className="add-task ">
             Add Task for {selectedEmployee.name}
           </Button>
         ) : (
@@ -997,12 +992,7 @@ const TasksContent = () => {
                 cursor: 'not-allowed',
               }}
             >
-              <Button
-                color="primary"
-                disabled
-                style={{ pointerEvents: 'none', opacity: 0.5 }}
-                className="mt-4"
-              >
+              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
                 Add Task for {selectedEmployee?.name}
               </Button>
             </span>
@@ -1376,8 +1366,14 @@ const TasksContent = () => {
           </Col>
         </Row>
       </ModalMaker>
-      <HeadlessModal isOpen={viewModal} onClose={() => setViewModal(false)}>
-        <div>
+      <ModalMaker
+        modal={viewModal}
+        toggle={() => setViewModal(false)}
+        centered
+        size={'md'}
+        viewHeader={false}
+      >
+        <div className="py-3">
           <div className="d-flex justify-content-between pointer">
             <h1 className="text-2xl font-semibold">{taskToView?.title}</h1>{' '}
             <MessageSquareX onClick={() => setViewModal(false)} />
@@ -1394,7 +1390,7 @@ const TasksContent = () => {
             <p className="mt-3">{taskToView?.updatedByEmployeeName}</p>
           )}{' '}
         </div>
-      </HeadlessModal>
+      </ModalMaker>
       <div className="dashboard-container">
         <Dashboard
           ref={dashboardRef}

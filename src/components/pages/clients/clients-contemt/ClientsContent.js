@@ -1,12 +1,13 @@
 /* eslint-disable prettier/prettier */
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Alert, Button, Col, Form, Input, Row } from 'reactstrap'
+import { Alert, Badge, Button, Col, Form, Input, Row } from 'reactstrap'
 import { Loader, ModalMaker } from '../../../ui'
 import check from '/assets/images/check.png'
 import './ClientContent.scss'
-import { Delete, Pen, X } from 'lucide-react'
+import { Pen, X } from 'lucide-react'
 import { BASE_URL } from '../../../../api/base'
+
 const ClientsContent = () => {
   const [addClientModal, setAddClientModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -17,33 +18,52 @@ const ClientsContent = () => {
   const [clientToDelete, setClientToDelete] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editClientId, setEditClientId] = useState(null)
-  const authTasks = JSON.parse(localStorage.getItem('authData'))
+  const [isHR, setIsHR] = useState(false)
+
+  // Get auth data from localStorage
+  const authData = JSON.parse(localStorage.getItem('authData'))
+  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
 
   const [clientData, setClientData] = useState({
     name: '',
     code: '',
   })
-  const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchUserDataAndClients = async () => {
       try {
         setIsLoading(true)
-        const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
+
+        // First fetch user data to check HR status
+        if (authData?.employeeId) {
+          const userResponse = await axios.get(
+            `${BASE_URL}/Employee/GetEmployeeWithId?id=${authData.employeeId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            },
+          )
+          setIsHR(userResponse.data?.department?.toLowerCase() === 'hr')
+        }
+
+        // Then fetch clients
+        const clientsResponse = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
           headers: {
-            Authorization: `Bearer   ${authTasks.token}`,
+            Authorization: `Bearer ${authToken}`,
           },
         })
-        setClients(response.data)
+        setClients(clientsResponse.data)
       } catch (error) {
-        console.error('Error fetching clients:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchClients()
-  }, [])
+    fetchUserDataAndClients()
+  }, [authToken, authData?.employeeId])
+
   const toggle = () => {
     setAddClientModal(!addClientModal)
     if (!addClientModal) {
@@ -70,13 +90,13 @@ const ClientsContent = () => {
       }
 
       if (isEditing) {
-        const payload = {
+        const updatePayload = {
           id: editClientId,
           name: clientData.name,
           clientCode: clientData.code,
         }
 
-        await axios.post(`${BASE_URL}/Clients/UpdateClient/${editClientId}`, payload, {
+        await axios.post(`${BASE_URL}/Clients/UpdateClient/${editClientId}`, updatePayload, {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -93,18 +113,14 @@ const ClientsContent = () => {
       }
 
       setAddClientModal(false)
-
       setClientData({ name: '', code: '' })
       setIsEditing(false)
-      const response = await axios.get(
-        `${BASE_URL}/Clients/GetAllClients`,
 
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+      const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
         },
-      )
+      })
       setClients(response.data)
     } catch (error) {
       setModalMessage(
@@ -144,10 +160,12 @@ const ClientsContent = () => {
       setIsEditing(false)
     }
   }
+
   const confirmDelete = (client) => {
     setClientToDelete(client)
     setConfirmDeleteModal(true)
   }
+
   const handleEditClient = (client) => {
     setClientData({
       name: client.name,
@@ -160,59 +178,64 @@ const ClientsContent = () => {
 
   return (
     <div className="client-content">
-      <div className="d-flex justify-content-end my-3">
-        <Button color="primary" onClick={toggle} className="px-3 py-2">
-          Add Client
-        </Button>
-        <ModalMaker modal={addClientModal} toggle={toggle} centered size={'md'}>
-          <Form onSubmit={handleSubmit}>
-            <Row className="mb-3">
-              <Col>
-                <Input
-                  type="text"
-                  id="name"
-                  name="name"
-                  placeholder="Enter Client Name"
-                  value={clientData.name}
-                  onChange={handleClientDataChange}
-                  required
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col>
-                <Input
-                  type="text"
-                  id="code"
-                  name="code"
-                  placeholder="Enter Client Code"
-                  value={clientData.code}
-                  onChange={handleClientDataChange}
-                  required
-                />
-              </Col>
-            </Row>
+      {/* Only show Add Client button for HR users */}
+      {isHR && (
+        <div className="d-flex justify-content-end my-3">
+          <Button color="primary" onClick={toggle} className="px-3 py-2">
+            Add Client
+          </Button>
+        </div>
+      )}
 
-            <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
-              {isEditing ? 'Update' : 'Add'}
-            </Button>
-          </Form>
+      <ModalMaker modal={addClientModal} toggle={toggle} centered size={'md'}>
+        <Form onSubmit={handleSubmit}>
+          <Row className="mb-3">
+            <Col>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Enter Client Name"
+                value={clientData.name}
+                onChange={handleClientDataChange}
+                required
+              />
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <Input
+                type="text"
+                id="code"
+                name="code"
+                placeholder="Enter Client Code"
+                value={clientData.code}
+                onChange={handleClientDataChange}
+                required
+              />
+            </Col>
+          </Row>
+
+          <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
+            {isEditing ? 'Update' : 'Add'}
+          </Button>
+        </Form>
+      </ModalMaker>
+
+      {modalMessageVisible && (
+        <ModalMaker
+          size="md"
+          modal={modalMessageVisible}
+          toggle={() => setModalMessageVisible(false)}
+          centered
+        >
+          <div className="d-flex flex-column justify-content-center align-items-center gap-3">
+            <img src={check} width={70} height={70} alt="success" />
+            <h1 className="font-bold">{modalMessage}</h1>
+          </div>
         </ModalMaker>
+      )}
 
-        {modalMessageVisible && (
-          <ModalMaker
-            size="md"
-            modal={modalMessageVisible}
-            toggle={() => setModalMessageVisible(false)}
-            centered
-          >
-            <div className="d-flex flex-column justify-content-center align-items-center gap-3">
-              <img src={check} width={70} height={70} alt="success" />
-              <h1 className="font-bold">{modalMessage}</h1>
-            </div>
-          </ModalMaker>
-        )}
-      </div>
       {isLoading && (
         <div className="d-flex justify-content-center align-items-center mt-5">
           <Loader />
@@ -220,34 +243,36 @@ const ClientsContent = () => {
       )}
 
       <Row>
-        {/* If loading, show the loader */}
         {isLoading ? (
           <div className="d-flex justify-content-center align-items-center mt-5">
             <Loader />
           </div>
         ) : clients.length === 0 ? (
-          // Show "No clients found" if no clients are available after loading
           <Col md={12} className="d-flex justify-content-center align-items-center mt-5">
             <h4>No clients found</h4>
           </Col>
         ) : (
-          // Show clients if they exist
           clients.map((client) => (
             <Col md={6} key={client.id} className="mb-2">
               <Alert color="secondary" className="border-0 mb-0">
                 <div className="d-flex justify-content-between align-items-center">
-                  <div>
+                  <div className="d-flex justify-content-between align-items-center w-100">
                     {client.name} - {client.clientCode}
+                    <Badge color={client.isActive ? 'success' : 'danger'} className="ms-2" pill>
+                      {client.isActive ? 'Active' : 'Not Active'}
+                    </Badge>
                   </div>
-                  <div className="d-flex gap-2">
-                    <Pen
-                      className="pointer mx-2"
-                      size={16}
-                      onClick={() => handleEditClient(client)}
-                    />
-
-                    <X className="pointer" size={16} onClick={() => confirmDelete(client)} />
-                  </div>
+                  {/* Only show edit/delete controls for HR users */}
+                  {isHR && (
+                    <div className="d-flex gap-2">
+                      <Pen
+                        className="pointer mx-2"
+                        size={16}
+                        onClick={() => handleEditClient(client)}
+                      />
+                      <X className="pointer" size={16} onClick={() => confirmDelete(client)} />
+                    </div>
+                  )}
                 </div>
               </Alert>
             </Col>
