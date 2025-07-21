@@ -5,7 +5,11 @@ import { format } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MessageSquareX, User, X } from 'lucide-react'
 
-const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) => {
+const TaskCard: React.FC<{
+  task: Task
+  employee: any
+  handleViewDetails?: (task: Task) => void
+}> = ({ task, employee, handleViewDetails }) => {
   const [isOpen, setIsOpen] = useState(false)
 
   const getBgColor = () => {
@@ -20,11 +24,18 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
         return 'bg-gray-100'
     }
   }
-
+  const handleClick = () => {
+    if (handleViewDetails) {
+      handleViewDetails(task)
+    }
+  }
   return (
     <>
       <div>
-        <div className={` rounded-md p-3 mb-3 cursor-pointer h-[7rem]  TaskCard ${getBgColor()}`}>
+        <div
+          className={` rounded-md p-3 mb-3 cursor-pointer h-[7rem]  TaskCard ${getBgColor()}`}
+          onClick={handleClick}
+        >
           <div className="flex items-center gap-3">
             {' '}
             {employee ? (
@@ -72,56 +83,6 @@ const TaskCard: React.FC<{ task: Task; employee: any }> = ({ task, employee }) =
           )}
         </div>
       </div>
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
-          style={{ zIndex: 9999 }}
-        >
-          <div className="absolute inset-0" onClick={() => setIsOpen(false)}></div>
-          <Card className="relative z-[10000] w-full max-w-md">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <CardTitle className="max-w-[90%]" style={{ lineHeight: '1.2' }}>
-                  {task.title}
-                </CardTitle>
-                <MessageSquareX onClick={() => setIsOpen(false)} className="cursor-pointer" />
-              </div>
-              <CardDescription className="flex items-center justify-between">
-                <span>
-                  {task.time} {task.endTime ? `- ${task.endTime}` : ''}
-                </span>
-                <span>{format(task.date, 'EEE, MMM d')}</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {task.description && <p className="text-sm mb-4">{task.description}</p>}
-              {task.assignees?.length > 0 && (
-                <div className="mt-2">
-                  <div className="text-sm font-medium mb-1">Assignees:</div>
-                  <div className="flex">
-                    {task.assignees.map((assignee) => (
-                      <div
-                        key={assignee.id}
-                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center -ml-1 first:ml-0 border border-white text-sm font-medium"
-                      >
-                        {assignee.avatar ? (
-                          <img
-                            src={assignee.avatar}
-                            alt={assignee.name}
-                            className="w-full h-full rounded-full"
-                          />
-                        ) : (
-                          assignee.name.substring(0, 1)
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </>
   )
 }

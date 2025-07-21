@@ -1,12 +1,22 @@
 /* eslint-disable prettier/prettier */
 import { Badge, Col, Button, Modal, ModalHeader, ModalBody, ModalFooter, Row } from 'reactstrap'
 
-const ModalMaker = ({ modal, toggle, children, modalControls, size, className }) => {
+const ModalMaker = ({
+  modal,
+  toggle,
+  children,
+  modalControls,
+  size,
+  className,
+  viewHeader = true,
+}) => {
   return (
     <Modal isOpen={modal} toggle={toggle} centered size={size} className={className}>
-      <ModalHeader toggle={toggle} className="border-0">
-        {' '}
-      </ModalHeader>
+      {viewHeader && (
+        <ModalHeader toggle={toggle} className="border-0">
+          {' '}
+        </ModalHeader>
+      )}{' '}
       <ModalBody className="py-0">{children}</ModalBody>
       <ModalFooter className="border-0">{modalControls}</ModalFooter>
     </Modal>

@@ -86,3 +86,17 @@ a {
 .p-tabview-nav {
   margin-bottom: 0 !important;
 }
+// This ensures the dropdown portal (if using one) appears above everything
+.c-dropdown__menu {
+  z-index: 9999 !important;
+}
+
+// If CoreUI uses a portal for dropdowns
+.c-dropdown-portal {
+  z-index: 9999 !important;
+}
+
+// Header stays in normal flow
+.app-header {
+  z-index: 0;
+}

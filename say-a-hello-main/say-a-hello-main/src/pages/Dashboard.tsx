@@ -54,10 +54,18 @@ interface DashboardProps {
   showOnlyMyTasks?: boolean
   currentUserId?: string
   managerTeam?: any[]
+  handleViewDetails?: (task: Task) => void
 }
 
 const Dashboard = forwardRef((props: DashboardProps, ref) => {
-  const { onEditTask, onDeleteTask, showOnlyMyTasks, currentUserId, managerTeam } = props
+  const {
+    onEditTask,
+    onDeleteTask,
+    showOnlyMyTasks,
+    currentUserId,
+    managerTeam,
+    handleViewDetails,
+  } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
@@ -155,7 +163,18 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       setLoading(false)
     }
   }
-
+  useEffect(() => {
+    if (currentUserId && !selectedEmployee && departments.length > 0) {
+      // Find the logged-in user in departments
+      for (const dept of departments) {
+        const foundEmployee = dept.employees.find((emp) => emp.id === currentUserId.toString())
+        if (foundEmployee) {
+          handleEmployeeSelect(dept, foundEmployee)
+          break
+        }
+      }
+    }
+  }, [currentUserId, departments, selectedEmployee])
   const toggleDeleteModal = () => setDeleteModal(!deleteModal)
 
   const refresh = async () => {
@@ -423,10 +442,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
             {!selectedDepartment ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center p-4 empty-department">
-                  <h3 className="text-lg font-medium">No department selected</h3>
-                  <p className="text-muted-foreground">
-                    Please select a department from the sidebar
-                  </p>
+                  <h3 className="text-lg font-medium">Loading your tasks...</h3>
                 </div>
               </div>
             ) : (
@@ -441,6 +457,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
                 showOnlyMyTasks={showOnlyMyTasks}
                 currentUserId={currentUserId}
                 managerTeam={managerTeam}
+                handleViewDetails={handleViewDetails}
               />
             )}
           </div>

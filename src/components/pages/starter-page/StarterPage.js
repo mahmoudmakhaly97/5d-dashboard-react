@@ -86,7 +86,7 @@ const StarterPage = () => {
           token: response.data.token,
           role: 'employee',
           user: {
-            name: response.data.user?.name || email.split('@')[0],
+            name: response.data.user?.name || email.split('@')[0], // Falls back to email prefix if no name
             email: email,
           },
         }

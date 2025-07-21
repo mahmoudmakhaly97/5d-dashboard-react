@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { useState, useEffect, useRef } from 'react'
 import { Dashboard } from 'react-employee-calendar'
-import { UncontrolledTooltip } from 'reactstrap'
+import { Card, CardHeader, CardTitle, UncontrolledTooltip } from 'reactstrap'
 
 import 'react-employee-calendar/dist/index.css'
 import { Button, Col, Input, Row, Form, FormGroup, Label } from 'reactstrap'
@@ -14,7 +14,10 @@ import './Tasks.scss'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TimeSelector from './TimeSelector'
 import { BASE_URL } from '../../../../api/base'
+import { MessageSquareX } from 'lucide-react'
+import HeadlessModal from '../../../ui/HeadlessModal'
 // Modify your initial state to use location state
+import { parse, isValid, differenceInMinutes } from 'date-fns'
 
 const TasksContent = () => {
   const [modal, setModal] = useState(false)
@@ -30,7 +33,9 @@ const TasksContent = () => {
   const [tooltipMessage, setTooltipMessage] = useState('')
   const [deleteModal, setDeleteModal] = useState(false) // State for delete confirmation modal
   const [editModal, setEditModal] = useState(false)
+  const [viewModal, setViewModal] = useState(false)
   const [taskToEdit, setTaskToEdit] = useState(null)
+  const [taskToView, setTaskToView] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [managerTeam, setManagerTeam] = useState([])
   const [isManager, setIsManager] = useState(false)
@@ -870,6 +875,77 @@ const TasksContent = () => {
 
     return () => clearInterval(interval)
   }, [selectedEmployee, selectedDepartment])
+  const handleViewDetails = async (task) => {
+    try {
+      const response = await fetch(`${BASE_URL}/Tasks/GetTaskById/${task.id}`, {
+        headers: {
+          Authorization: `Bearer ${authTasks.token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch task details')
+      }
+
+      const taskDetails = await response.json()
+      console.log('taskDetails', taskDetails)
+      setTaskToView(taskDetails)
+      setViewModal(true)
+    } catch (error) {
+      console.error('Error fetching task details:', error)
+      setModalMessage('Failed to load task details')
+      setModalMessageVisible(true)
+    }
+  }
+  const padTime = (timeStr) => {
+    if (!timeStr) return null
+
+    // Handle ISO format (2025-07-21T14:00:00)
+    if (timeStr.includes('T')) {
+      const date = new Date(timeStr)
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+    }
+
+    // Handle "2:00 PM" format
+    if (timeStr.includes(' ')) {
+      const [time, period] = timeStr.split(' ')
+      let [h, m] = time.split(':').map(Number)
+      if (period === 'PM' && h < 12) h += 12
+      if (period === 'AM' && h === 12) h = 0
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+    }
+
+    // Default HH:mm handling
+    const [h, m] = timeStr.split(':').map(Number)
+    if (isNaN(h) || isNaN(m)) return null
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+  }
+
+  const formatDuration = (startISO, endISO) => {
+    try {
+      const start = new Date(startISO)
+      const end = new Date(endISO)
+
+      if (!isValid(start) || !isValid(end)) return 'Invalid time'
+
+      let minutes = differenceInMinutes(end, start)
+      if (isNaN(minutes)) return 'Invalid duration'
+
+      // Take absolute value to handle negative durations
+      minutes = Math.abs(minutes)
+
+      const hrs = Math.floor(minutes / 60)
+      const mins = minutes % 60
+
+      if (hrs && mins) return `${hrs} hr : ${mins} min`
+      if (hrs) return `${hrs} hr`
+      return `${mins} min`
+    } catch (error) {
+      console.error('Duration calculation error:', error)
+      return 'Invalid time'
+    }
+  }
+
   return (
     <div className="tasks-container  ">
       {selectedEmployee?.id && selectedEmployee?.name ? (
@@ -888,7 +964,12 @@ const TasksContent = () => {
                 cursor: 'not-allowed',
               }}
             >
-              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
+              <Button
+                color="primary"
+                disabled
+                style={{ pointerEvents: 'none', opacity: 0.5 }}
+                className="mt-4"
+              >
                 Add Task for Myself
               </Button>
             </span>
@@ -903,7 +984,7 @@ const TasksContent = () => {
           </div>
         ) : // For non-managers adding tasks to others in their team
         isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task">
+          <Button color="primary" onClick={toggle} className="add-task mt-4">
             Add Task for {selectedEmployee.name}
           </Button>
         ) : (
@@ -916,7 +997,12 @@ const TasksContent = () => {
                 cursor: 'not-allowed',
               }}
             >
-              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
+              <Button
+                color="primary"
+                disabled
+                style={{ pointerEvents: 'none', opacity: 0.5 }}
+                className="mt-4"
+              >
                 Add Task for {selectedEmployee?.name}
               </Button>
             </span>
@@ -1290,6 +1376,25 @@ const TasksContent = () => {
           </Col>
         </Row>
       </ModalMaker>
+      <HeadlessModal isOpen={viewModal} onClose={() => setViewModal(false)}>
+        <div>
+          <div className="d-flex justify-content-between pointer">
+            <h1 className="text-2xl font-semibold">{taskToView?.title}</h1>{' '}
+            <MessageSquareX onClick={() => setViewModal(false)} />
+          </div>
+          <div className="d-flex justify-content-between text-muted">
+            <span>
+              {taskToView?.startTime && taskToView?.endTime
+                ? formatDuration(taskToView.startTime, taskToView.endTime)
+                : 'No duration'}
+            </span>
+          </div>
+          <div className="mt-4">{taskToView?.description}</div>
+          {taskToView?.updatedByEmployeeName === '!N/A' && (
+            <p className="mt-3">{taskToView?.updatedByEmployeeName}</p>
+          )}{' '}
+        </div>
+      </HeadlessModal>
       <div className="dashboard-container">
         <Dashboard
           ref={dashboardRef}
@@ -1299,6 +1404,7 @@ const TasksContent = () => {
           onAllowCreateTaskChange={setAllowCreateTask} // Pass the setter
           showOnlyMyTasks={showOnlyMyTasks}
           currentUserId={currentUserId}
+          handleViewDetails={handleViewDetails}
         />
       </div>
     </div>

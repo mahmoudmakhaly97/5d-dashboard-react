@@ -23,6 +23,8 @@ interface TaskTimelineProps {
   onAllowCreateTaskChange?: (allow: boolean) => void
   showOnlyMyTasks?: boolean
   currentUserId?: string | number
+  managerTeam?: any[]
+  handleViewDetails?: (task: Task) => void
 }
 
 const TaskTimeline: React.FC<TaskTimelineProps> = ({
@@ -35,6 +37,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   onAllowCreateTaskChange,
   showOnlyMyTasks = false,
   currentUserId = null,
+  managerTeam = [],
+  handleViewDetails,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -190,14 +194,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       tasks =
         department.employees?.flatMap((emp) =>
           (emp.tasks || [])
-            .filter((task) => isSameDay(new Date(task.date), currentDate))
+            .filter((task) => isSameDay(new Date(task.date), currentDate)) // Fixed: Added closing parenthesis
             .map((task) => ({ ...task, employeeName: emp.name, employeeAvatar: emp.avatar })),
         ) || []
     }
 
-    if (showOnlyMyTasks && currentUserId) {
+    if (showOnlyMyTasks || (employee && employee.id === currentUserId?.toString())) {
       tasks = tasks.filter(
-        (task) => task.assignedToEmployeeId?.toString() === currentUserId.toString(),
+        (task) => task.assignedToEmployeeId?.toString() === currentUserId?.toString(),
       )
     }
 
@@ -263,18 +267,32 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       }
     }
   }, [employee])
+  // In TaskTimeline component
+  useEffect(() => {
+    if (employee && employee.id === currentUserId?.toString()) {
+      const today = new Date()
+      setSelectedDayForNewTask(today)
+      setSelectedDate(today)
+      setIsViewingCurrentWeek(true)
 
+      if (onDateSelect) {
+        onDateSelect(today)
+      }
+    }
+  }, [employee, currentUserId])
   return (
-    <div className="relative w-full  p-4">
+    <div className="relative w-full p-4">
       <div className="flex flex-wrap mb-4 justify-between items-start w-full px-4 sm:px-[20px]">
         <h2 className="text-xl font-semibold">
-          {showOnlyMyTasks
-            ? 'My Tasks'
-            : department
-              ? employee
-                ? `${employee.name}'s Tasks - Week View`
-                : `${department.name} - Today's Tasks`
-              : 'All Tasks'}
+          {employee && employee.id === currentUserId?.toString()
+            ? 'My Tasks '
+            : showOnlyMyTasks
+              ? 'My Tasks'
+              : department
+                ? employee
+                  ? `${employee.name}'s Tasks - Week View`
+                  : `${department.name} - Today's Tasks`
+                : 'All Tasks'}
         </h2>
         <div className="text-sm text-muted-foreground">
           {employee && dateRange.length > 1
@@ -283,8 +301,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         </div>
       </div>
 
-      {/* Show buttons when in weekly view */}
-      {(employee && dateRange.length > 1) || showOnlyMyTasks ? (
+      {/* Always show week navigation for logged-in user */}
+      {(employee || showOnlyMyTasks) && (
         <div className="flex flex-wrap gap-2 ml-4 my-4 justify-between btn-tasks-container">
           <div className="relative group mr-2">
             <Button
@@ -319,20 +337,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
             </p>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* Timeline structure */}
-      {/* ...................................................................... */}
       <div className="relative min-h-[calc(9*120px)]">
-        {/* Main timeline layout */}
         <div className="flex">
           {/* Hour lines column */}
-
           <div className="w-16 flex-shrink-0">
             {hours.map((hour) => (
               <div key={hour} className="h-[120px] flex items-end">
-                {' '}
-                {/* Increased height */}
                 <div className="text-xs text-gray-500 pr-2 text-right w-full">
                   {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
                 </div>
@@ -341,19 +353,18 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           </div>
 
           {/* Employees and tasks columns */}
-          {/* .................................***********............................................................ */}
           <div className="flex-1 overflow-hidden relative">
             <div
               className="overflow-x-auto overflow-y-hidden rotate-180 h-full"
               ref={(el) => {
-                if (el) el.scrollTop = 50 // Optional: Force initial scroll position
+                if (el) el.scrollTop = 50
               }}
             >
-              {/* Weekly view for selected employee */}
               <div className="rotate-180 w-full min-w-max">
-                {employee && dateRange.length > 1 && (
+                {/* Show weekly view if we have an employee (logged-in user) */}
+                {(employee || showOnlyMyTasks) && (
                   <div className="flex relative">
-                    {/* Hour markers - placed here to span all date columns */}
+                    {/* Hour markers */}
                     <div className="absolute left-0 right-0 h-full pointer-events-none">
                       {hours.map((hour) => (
                         <div
@@ -368,7 +379,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       ))}
                     </div>
 
-                    {/* Time indicator line - placed here to span all date columns */}
+                    {/* Time indicator line */}
                     <div
                       className="absolute left-0 right-0 border-t-2 border-red-500 z-10"
                       style={{
@@ -390,8 +401,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       >
                         {/* Date header */}
                         <div
-                          className={` h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer 
-    ${isSameDay(date, selectedDayForNewTask) ? 'selected-day-header rounded-t-sm bg-blue-50 text-blue-600' : ''}`}
+                          className={`h-10 flex items-center justify-center border-b border-gray-200 cursor-pointer ${
+                            isSameDay(date, selectedDayForNewTask)
+                              ? 'selected-day-header rounded-t-sm bg-blue-50 text-blue-600'
+                              : ''
+                          }`}
                           onClick={(e) => handleDayClick(date, e)}
                         >
                           <div className="flex flex-col items-center">
@@ -423,7 +437,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                     left: '0px',
                                   }}
                                 >
-                                  <TaskCard task={task} employee={employee} />
+                                  <TaskCard
+                                    task={task}
+                                    employee={employee}
+                                    handleViewDetails={handleViewDetails}
+                                  />
                                   <Trash2
                                     size={19}
                                     className="absolute top-4 right-3 cursor-pointer text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
@@ -443,8 +461,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                   </div>
                 )}
 
-                {/* Daily view for department (multiple employees) */}
-                {!employee && department && department.employees && (
+                {/* Show department view only if not showing logged-in user's tasks */}
+                {!employee && !showOnlyMyTasks && department && department.employees && (
                   <div className="flex">
                     {/* Hour markers for department view */}
                     <div className="absolute left-0 right-0 h-full pointer-events-none">
@@ -487,8 +505,6 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                         </div>
                         {/* Tasks for this employee */}
                         <div className="relative h-[calc(9*120px)]">
-                          {' '}
-                          {/* Adjusted height */}
                           {(emp.tasks || [])
                             .filter(
                               (task) =>
@@ -514,6 +530,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                       name: emp.name,
                                       avatar: emp.avatar,
                                     }}
+                                    handleViewDetails={handleViewDetails}
                                   />
                                   <Trash2
                                     size={19}
@@ -538,13 +555,17 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           </div>
         </div>
       </div>
-      {/* ..................................... */}
-      {/* 
-      {tasks.length === 0 && !employee && (
+
+      {/* Empty state when no tasks */}
+      {tasks.length === 0 && (
         <div className="flex items-center justify-center h-64 text-muted-foreground">
-          <p className="text-start w-1/2">No tasks scheduled for today</p>
+          <p className="text-start w-1/2">
+            {employee && employee.id === currentUserId?.toString()
+              ? "You don't have any tasks scheduled this week"
+              : 'No tasks scheduled'}
+          </p>
         </div>
-      )} */}
+      )}
 
       {selectedTaskToDelete && (
         <ConfirmDeleteModal

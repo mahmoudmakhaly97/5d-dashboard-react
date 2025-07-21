@@ -80,27 +80,29 @@ const AppHeaderDropdown = () => {
   }
 
   return (
-    <CDropdown variant="nav-item d-flex align-items-center border-0">
-      <span className="fw-medium d-none d-md-inline">{userData.name}</span>
+    <div>
+      <CDropdown variant="nav-item d-flex align-items-center border-0">
+        <span className="fw-medium d-none d-md-inline">{userData.name}</span>
 
-      <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
-        <CAvatar src={avatar8} size="md" />
-      </CDropdownToggle>
+        <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
+          <CAvatar src={avatar8} size="md" />
+        </CDropdownToggle>
 
-      <CDropdownMenu className="pt-0" placement="bottom-end">
-        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
-        <button>
-          <CDropdownItem component="button" onClick={handleMyTasksClick}>
+        <CDropdownMenu className="pt-0" placement="bottom-end" style={{ zIndex: 9999 }}>
+          <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
+          <button>
+            <CDropdownItem component="button" onClick={handleMyTasksClick}>
+              <CIcon icon={cilLockLocked} className="me-2" />
+              My Tasks
+            </CDropdownItem>
+          </button>
+          <CDropdownItem href="#" onClick={handleLogout}>
             <CIcon icon={cilLockLocked} className="me-2" />
-            My Tasks
+            Logout
           </CDropdownItem>
-        </button>
-        <CDropdownItem href="#" onClick={handleLogout}>
-          <CIcon icon={cilLockLocked} className="me-2" />
-          Logout
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+        </CDropdownMenu>
+      </CDropdown>
+    </div>
   )
 }
 

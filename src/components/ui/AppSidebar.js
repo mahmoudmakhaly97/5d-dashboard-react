@@ -17,7 +17,7 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { sygnet } from 'src/assets/brand/sygnet'
 
 // sidebar nav config
-import navigation, { useNavItems } from './_nav'
+import { useNavItems } from './_nav'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
@@ -27,7 +27,7 @@ const AppSidebar = () => {
 
   return (
     <CSidebar
-      className="border-end"
+      className="border-end z-0"
       position="fixed"
       unfoldable={unfoldable}
       visible={sidebarShow}

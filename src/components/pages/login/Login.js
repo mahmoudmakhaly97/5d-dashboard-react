@@ -71,7 +71,6 @@ const Login = () => {
       }
 
       const data = await res.json()
-
       if (login.rememberMe) {
         localStorage.setItem('authToken', data.token)
       } else {

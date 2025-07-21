@@ -101,9 +101,23 @@ const Dashboard = () => {
         const modalContent = (
           <div className="employee-details-modal">
             <Pencil
-              className="edit pointer "
+              className="edit pointer"
               size={20}
-              onClick={() => navigate('/employee', { state: { employeeId } })}
+              onClick={() => {
+                const authToken =
+                  localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+                if (!authToken) {
+                  setModalMessageVisible(true)
+                  setModalMessage(
+                    <div className="d-flex flex-column align-items-center gap-4">
+                      <img src={errorIcon} width={70} height={70} />
+                      <h4>Oops! Please Login And Try Again</h4>
+                    </div>,
+                  )
+                } else {
+                  navigate('/employee', { state: { employeeId } })
+                }
+              }}
             />
 
             <div className="d-flex flex-column align-items-center gap-1 mb-4">
