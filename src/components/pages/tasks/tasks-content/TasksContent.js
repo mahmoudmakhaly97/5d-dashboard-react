@@ -401,16 +401,6 @@ const TasksContent = () => {
     return taskTime <= now
   }
   const handleSubmit = async (e) => {
-    if (
-      String(formData.assignedToEmployeeId) === String(currentUserId) &&
-      authTasks?.role !== 'Account Manager'
-    ) {
-      setTooltipMessage('Regular employees cannot assign tasks to themselves')
-      setTooltipOpen(true)
-      setTimeout(() => setTooltipOpen(false), 4000)
-      return
-    }
-
     e.preventDefault()
 
     try {
@@ -840,14 +830,16 @@ const TasksContent = () => {
       return true
     }
 
-    // Prevent users from adding tasks for themselves
+    // Allow employees to add tasks for themselves
     if (currentUserId && String(employeeId) === String(currentUserId)) {
-      return false
+      return true
     }
+
     // Check if employee is in manager's direct team
     const isDirectTeamMember = managerTeam.some(
       (teamMember) => String(teamMember.id) === String(employeeId),
     )
+
     const isSubEmployee = employees.some((emp) => {
       const isManagedByTeamMember = managerTeam.some(
         (teamMember) => String(teamMember.id) === String(emp.managerId),
@@ -856,7 +848,7 @@ const TasksContent = () => {
     })
 
     return isDirectTeamMember || isSubEmployee
-  } // Add this useEffect to track department selection
+  }
   useEffect(() => {
     const interval = setInterval(() => {
       if (dashboardRef.current) {
@@ -954,33 +946,12 @@ const TasksContent = () => {
           <Button color="primary" onClick={toggle} className="add-task">
             Add Task for {selectedEmployee.name}
           </Button>
-        ) : // For non-managers, check if they're trying to add task to themselves
-        String(selectedEmployee.id) === String(currentUserId) ? (
-          <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
-            <span
-              id="selfTaskTooltip"
-              style={{
-                display: 'inline-block',
-                cursor: 'not-allowed',
-              }}
-            >
-              <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
-                Add Task for Myself
-              </Button>
-            </span>
-            <UncontrolledTooltip
-              target="selfTaskTooltip"
-              placement="top"
-              delay={{ show: 0, hide: 0 }}
-              fade={true}
-            >
-              Regular employees cannot add tasks for themselves. Please contact your manager.
-            </UncontrolledTooltip>
-          </div>
-        ) : // For non-managers adding tasks to others in their team
+        ) : // For non-managers, check if they're trying to add task to themselves or their team
         isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task ">
-            Add Task for {selectedEmployee.name}
+          <Button color="primary" onClick={toggle} className="add-task">
+            {String(selectedEmployee.id) === String(currentUserId)
+              ? 'Add Task for Myself'
+              : `Add Task for ${selectedEmployee.name}`}
           </Button>
         ) : (
           // For non-managers trying to add tasks to unauthorized employees
@@ -1002,7 +973,9 @@ const TasksContent = () => {
               delay={{ show: 0, hide: 0 }}
               fade={true}
             >
-              You can only add tasks for members of your team or their subordinates
+              {String(selectedEmployee.id) === String(currentUserId)
+                ? "You don't have permission to add tasks"
+                : 'You can only add tasks for members of your team or their subordinates'}
             </UncontrolledTooltip>
           </div>
         )
