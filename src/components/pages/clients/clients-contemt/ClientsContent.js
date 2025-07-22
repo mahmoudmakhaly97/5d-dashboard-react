@@ -1,11 +1,23 @@
 /* eslint-disable prettier/prettier */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
-import { Alert, Badge, Button, Col, Form, Input, Row } from 'reactstrap'
+import {
+  Alert,
+  Badge,
+  Button,
+  Col,
+  Form,
+  Input,
+  Row,
+  Dropdown,
+  DropdownToggle,
+  DropdownMenu,
+  DropdownItem,
+} from 'reactstrap'
 import { Loader, ModalMaker } from '../../../ui'
 import check from '/assets/images/check.png'
 import './ClientContent.scss'
-import { Pen, X } from 'lucide-react'
+import { Pen, X, ChevronDown } from 'lucide-react'
 import { BASE_URL } from '../../../../api/base'
 
 const ClientsContent = () => {
@@ -20,6 +32,12 @@ const ClientsContent = () => {
   const [editClientId, setEditClientId] = useState(null)
   const [isHR, setIsHR] = useState(false)
 
+  // New states for badge dropdown and status change confirmation
+  const [activeDropdown, setActiveDropdown] = useState(null)
+  const [confirmStatusModal, setConfirmStatusModal] = useState(false)
+  const [clientToChangeStatus, setClientToChangeStatus] = useState(null)
+  const [newStatusToSet, setNewStatusToSet] = useState(null)
+
   // Get auth data from localStorage
   const authData = JSON.parse(localStorage.getItem('authData'))
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
@@ -27,7 +45,9 @@ const ClientsContent = () => {
   const [clientData, setClientData] = useState({
     name: '',
     code: '',
+    isActive: true,
   })
+
   const parseJwt = (token) => {
     try {
       const base64Url = token.split('.')[1]
@@ -37,14 +57,65 @@ const ClientsContent = () => {
       return null
     }
   }
+
+  // Check if token is expired
+  const isTokenExpired = (token) => {
+    if (!token) return true
+    try {
+      const decoded = parseJwt(token)
+      const currentTime = Date.now() / 1000
+      return decoded.exp < currentTime
+    } catch (e) {
+      return true
+    }
+  }
+
+  // Get request headers with auth
+  const getAuthHeaders = () => {
+    if (!authToken || isTokenExpired(authToken)) {
+      console.warn('Auth token is missing or expired')
+      setModalMessage('Authentication expired. Please login again.')
+      setModalMessageVisible(true)
+      return null
+    }
+
+    return {
+      Authorization: `Bearer ${authToken}`,
+      'Content-Type': 'application/json',
+    }
+  }
+
+  // Fetch all clients
+  const fetchClients = async () => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers) return
+
+      const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
+        headers,
+      })
+      setClients(response.data)
+    } catch (error) {
+      console.error('Error fetching clients:', error)
+      if (error.response?.status === 401) {
+        setModalMessage('Authentication failed. Please login again.')
+      } else {
+        setModalMessage(
+          'Error fetching clients: ' + (error.response?.data?.message || error.message),
+        )
+      }
+      setModalMessageVisible(true)
+    }
+  }
+
   useEffect(() => {
     const fetchUserDataAndClients = async () => {
       try {
         setIsLoading(true)
         // Extract employeeId from token
         const tokenData = parseJwt(authToken)
-        const employeeId = tokenData?.id // From your token, this is "375" (string)
-        console.log('Extracted employeeId:', employeeId) // Debug log
+        const employeeId = tokenData?.id
+        console.log('Extracted employeeId:', employeeId)
 
         // First fetch user data to check HR status
         if (employeeId) {
@@ -56,19 +127,16 @@ const ClientsContent = () => {
               },
             },
           )
-          console.log('Employee data:', userResponse.data) // Debug log
+          console.log('Employee data:', userResponse.data)
           setIsHR(userResponse.data?.department?.toLowerCase() === 'hr')
         }
 
-        // Rest of your existing code to fetch clients...
-        const clientsResponse = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        })
-        setClients(clientsResponse.data)
+        // Fetch clients
+        await fetchClients()
       } catch (error) {
         console.error('Error fetching data:', error)
+        setModalMessage('Error loading data: ' + (error.response?.data?.message || error.message))
+        setModalMessageVisible(true)
       } finally {
         setIsLoading(false)
       }
@@ -77,12 +145,26 @@ const ClientsContent = () => {
     fetchUserDataAndClients()
   }, [authToken])
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.badge-dropdown-container')) {
+        setActiveDropdown(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   const toggle = () => {
     setAddClientModal(!addClientModal)
     if (!addClientModal) {
       setIsEditing(false)
       setEditClientId(null)
-      setClientData({ name: '', code: '' })
+      setClientData({ name: '', code: '', isActive: true })
     }
   }
 
@@ -97,50 +179,74 @@ const ClientsContent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const payload = {
-        name: clientData.name,
-        clientCode: clientData.code,
-      }
+      setIsLoading(true)
 
       if (isEditing) {
-        const updatePayload = {
+        // Handle edit case - use the correct update endpoint structure
+        const payload = {
           id: editClientId,
           name: clientData.name,
-          clientCode: clientData.code,
+          clientCode: parseInt(clientData.code), // Ensure clientCode is number
+          isActive: clientData.isActive,
         }
 
-        await axios.post(`${BASE_URL}/Clients/UpdateClient/${editClientId}`, updatePayload, {
+        console.log('Update payload:', payload)
+
+        await axios.post(`${BASE_URL}/Clients/UpdateClient/${editClientId}`, payload, {
           headers: {
             Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
           },
         })
 
         setModalMessage('Client updated successfully')
       } else {
+        // Handle create case
+        const payload = {
+          name: clientData.name,
+          clientCode: parseInt(clientData.code), // Ensure clientCode is number
+          isActive: clientData.isActive,
+        }
+
+        console.log('Create payload:', payload)
+
         await axios.post(`${BASE_URL}/Clients/CreateClient`, payload, {
           headers: {
             Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
           },
         })
+
         setModalMessage('Client added successfully')
       }
 
-      setAddClientModal(false)
-      setClientData({ name: '', code: '' })
-      setIsEditing(false)
+      // Refresh the clients list
+      await fetchClients()
 
-      const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      })
-      setClients(response.data)
+      // Reset form and close modal
+      setAddClientModal(false)
+      setClientData({ name: '', code: '', isActive: true })
+      setIsEditing(false)
+      setEditClientId(null)
     } catch (error) {
-      setModalMessage(
-        (isEditing ? 'Error updating client: ' : 'Error adding client: ') +
-          (error.response?.data?.message || error.message),
-      )
+      console.error('API Error:', error.response?.data || error.message)
+
+      let errorMessage = isEditing ? 'Error updating client: ' : 'Error adding client: '
+
+      if (error.response?.data?.errors) {
+        // Handle validation errors
+        errorMessage += Object.values(error.response.data.errors).flat().join(', ')
+      } else if (error.response?.data?.message) {
+        errorMessage += error.response.data.message
+      } else if (error.response?.data) {
+        errorMessage += JSON.stringify(error.response.data)
+      } else {
+        errorMessage += error.message
+      }
+
+      setModalMessage(errorMessage)
     } finally {
+      setIsLoading(false)
       setModalMessageVisible(true)
     }
   }
@@ -150,27 +256,49 @@ const ClientsContent = () => {
 
     try {
       setIsLoading(true)
-      await axios.post(`${BASE_URL}/Clients/DeleteClient/${clientToDelete.id}`, null, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      })
-      setModalMessage('Client deleted successfully')
 
-      const response = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
+      // Debug logs
+      console.log('Auth token:', authToken ? 'Present' : 'Missing')
+      console.log('Delete URL:', `${BASE_URL}/Clients/DeleteClient/${clientToDelete.id}`)
+      console.log('Client to delete:', clientToDelete)
+
+      // Make the delete request with proper headers
+      const response = await axios.post(
+        `${BASE_URL}/Clients/DeleteClient/${clientToDelete.id}`,
+        {}, // empty body if needed
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
         },
-      })
-      setClients(response.data)
+      )
+
+      setModalMessage('Client deleted successfully')
+      await fetchClients()
     } catch (error) {
-      setModalMessage('Error deleting client: ' + (error.response?.data?.message || error.message))
+      console.error('Delete error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        url: error.config?.url,
+        method: error.config?.method,
+      })
+
+      let errorMessage = 'Error deleting client: '
+      if (error.response?.status === 401) {
+        errorMessage += 'Unauthorized - Please check your permissions or login again'
+      } else {
+        errorMessage += error.response?.data?.message || error.message
+      }
+
+      setModalMessage(errorMessage)
     } finally {
       setIsLoading(false)
       setConfirmDeleteModal(false)
       setClientToDelete(null)
       setModalMessageVisible(true)
-      setIsEditing(false)
     }
   }
 
@@ -180,13 +308,71 @@ const ClientsContent = () => {
   }
 
   const handleEditClient = (client) => {
+    console.log('Editing client:', client)
     setClientData({
       name: client.name,
-      code: client.clientCode,
+      code: client.clientCode.toString(),
+      isActive: client.isActive,
     })
     setEditClientId(client.id)
     setIsEditing(true)
     setAddClientModal(true)
+  }
+
+  // Handle badge dropdown toggle
+  const toggleBadgeDropdown = (clientId, event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setActiveDropdown(activeDropdown === clientId ? null : clientId)
+  }
+
+  // Handle status change request
+  const handleStatusChangeRequest = (client, newStatus) => {
+    setClientToChangeStatus(client)
+    setNewStatusToSet(newStatus)
+    setConfirmStatusModal(true)
+    setActiveDropdown(null) // Close dropdown
+  }
+
+  // Confirm and execute status change
+  const confirmStatusChange = async () => {
+    if (!clientToChangeStatus) return
+
+    try {
+      setIsLoading(true)
+
+      await axios.post(
+        `${BASE_URL}/Clients/UpdateClientWithFlagActive/${clientToChangeStatus.id}`,
+        {
+          id: clientToChangeStatus.id,
+          name: clientToChangeStatus.name,
+          clientCode: clientToChangeStatus.clientCode,
+          isActive: newStatusToSet,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+
+      setModalMessage(`Client ${newStatusToSet ? 'activated' : 'deactivated'} successfully`)
+
+      // Refresh the clients list
+      await fetchClients()
+    } catch (error) {
+      console.error('Toggle active status error:', error)
+      setModalMessage(
+        'Error updating client status: ' + (error.response?.data?.message || error.message),
+      )
+    } finally {
+      setIsLoading(false)
+      setConfirmStatusModal(false)
+      setClientToChangeStatus(null)
+      setNewStatusToSet(null)
+      setModalMessageVisible(true)
+    }
   }
 
   return (
@@ -215,10 +401,10 @@ const ClientsContent = () => {
               />
             </Col>
           </Row>
-          <Row>
+          <Row className="mb-3">
             <Col>
               <Input
-                type="text"
+                type="number"
                 id="code"
                 name="code"
                 placeholder="Enter Client Code"
@@ -229,7 +415,12 @@ const ClientsContent = () => {
             </Col>
           </Row>
 
-          <Button color="primary" type="submit" className="px-3 w-100 py-2 mt-4">
+          <Button
+            color="primary"
+            type="submit"
+            className="px-3 w-100 py-2 mt-2"
+            disabled={isLoading}
+          >
             {isEditing ? 'Update' : 'Add'}
           </Button>
         </Form>
@@ -270,10 +461,61 @@ const ClientsContent = () => {
               <Alert color="secondary" className="border-0 mb-0">
                 <div className="d-flex justify-content-between align-items-center">
                   <div className="d-flex justify-content-between align-items-center w-100">
-                    {client.name} - {client.clientCode}
-                    <Badge color={client.isActive ? 'success' : 'danger'} className="ms-2" pill>
-                      {client.isActive ? 'Active' : 'Not Active'}
-                    </Badge>
+                    <span>
+                      {client.name} - {client.clientCode}
+                    </span>
+                    <div className="d-flex align-items-center gap-2">
+                      {/* Badge with dropdown for HR users */}
+                      {isHR ? (
+                        <div className="badge-dropdown-container position-relative">
+                          <Badge
+                            color={client.isActive ? 'success' : 'danger'}
+                            className="ms-2 cursor-pointer d-flex align-items-center gap-1"
+                            pill
+                            onClick={(e) => toggleBadgeDropdown(client.id, e)}
+                            style={{ cursor: 'pointer' }}
+                            title="Click to change status"
+                          >
+                            {client.isActive ? 'Active' : 'Not Active'}
+                            <ChevronDown size={12} />
+                          </Badge>
+
+                          {/* Dropdown Menu */}
+                          {activeDropdown === client.id && (
+                            <div
+                              className="position-absolute bg-white border rounded shadow-sm"
+                              style={{
+                                top: '100%',
+                                right: '0',
+                                minWidth: '120px',
+                                zIndex: 1050,
+                                marginTop: '2px',
+                              }}
+                            >
+                              <div
+                                className="dropdown-item px-3 py-2"
+                                style={{ cursor: 'pointer', fontSize: '0.875rem' }}
+                                onClick={() => handleStatusChangeRequest(client, true)}
+                              >
+                                <span className="text-success">● Active</span>
+                              </div>
+                              <div
+                                className="dropdown-item px-3 py-2"
+                                style={{ cursor: 'pointer', fontSize: '0.875rem' }}
+                                onClick={() => handleStatusChangeRequest(client, false)}
+                              >
+                                <span className="text-danger">● Not Active</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // Regular badge for non-HR users
+                        <Badge color={client.isActive ? 'success' : 'danger'} className="ms-2" pill>
+                          {client.isActive ? 'Active' : 'Not Active'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   {/* Only show edit/delete controls for HR users */}
                   {isHR && (
@@ -282,8 +524,8 @@ const ClientsContent = () => {
                         className="pointer mx-2"
                         size={16}
                         onClick={() => handleEditClient(client)}
+                        title="Edit client"
                       />
-                      <X className="pointer" size={16} onClick={() => confirmDelete(client)} />
                     </div>
                   )}
                 </div>
@@ -293,6 +535,43 @@ const ClientsContent = () => {
         )}
       </Row>
 
+      {/* Status Change Confirmation Modal */}
+      {confirmStatusModal && (
+        <ModalMaker
+          size="md"
+          modal={confirmStatusModal}
+          toggle={() => setConfirmStatusModal(false)}
+          centered
+        >
+          <div className="d-flex flex-column justify-content-center align-items-center gap-3">
+            <h4 className="text-center">
+              Are you sure you want to change the status of{' '}
+              <strong>{clientToChangeStatus?.name}</strong> to{' '}
+              <span className={newStatusToSet ? 'text-success' : 'text-danger'}>
+                {newStatusToSet ? 'Active' : 'Not Active'}
+              </span>
+              ?
+            </h4>
+            <div className="d-flex gap-3 mt-4">
+              <Button color="primary" onClick={confirmStatusChange} disabled={isLoading}>
+                Yes, Change Status
+              </Button>
+              <Button
+                color="secondary"
+                onClick={() => {
+                  setConfirmStatusModal(false)
+                  setClientToChangeStatus(null)
+                  setNewStatusToSet(null)
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </ModalMaker>
+      )}
+
+      {/* Delete Confirmation Modal */}
       {confirmDeleteModal && (
         <ModalMaker
           size="md"
@@ -305,7 +584,7 @@ const ClientsContent = () => {
               Are you sure you want to delete <strong>{clientToDelete?.name}</strong>?
             </h4>
             <div className="d-flex gap-3 mt-4">
-              <Button color="danger" onClick={handleDeleteClient}>
+              <Button color="danger" onClick={handleDeleteClient} disabled={isLoading}>
                 Yes, Delete
               </Button>
               <Button color="secondary" onClick={() => setConfirmDeleteModal(false)}>
