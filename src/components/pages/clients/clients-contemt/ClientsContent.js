@@ -28,26 +28,39 @@ const ClientsContent = () => {
     name: '',
     code: '',
   })
-
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      return JSON.parse(window.atob(base64))
+    } catch (e) {
+      return null
+    }
+  }
   useEffect(() => {
     const fetchUserDataAndClients = async () => {
       try {
         setIsLoading(true)
+        // Extract employeeId from token
+        const tokenData = parseJwt(authToken)
+        const employeeId = tokenData?.id // From your token, this is "375" (string)
+        console.log('Extracted employeeId:', employeeId) // Debug log
 
         // First fetch user data to check HR status
-        if (authData?.employeeId) {
+        if (employeeId) {
           const userResponse = await axios.get(
-            `${BASE_URL}/Employee/GetEmployeeWithId?id=${authData.employeeId}`,
+            `${BASE_URL}/Employee/GetEmployeeWithId?id=${employeeId}`,
             {
               headers: {
                 Authorization: `Bearer ${authToken}`,
               },
             },
           )
+          console.log('Employee data:', userResponse.data) // Debug log
           setIsHR(userResponse.data?.department?.toLowerCase() === 'hr')
         }
 
-        // Then fetch clients
+        // Rest of your existing code to fetch clients...
         const clientsResponse = await axios.get(`${BASE_URL}/Clients/GetAllClients`, {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -62,7 +75,7 @@ const ClientsContent = () => {
     }
 
     fetchUserDataAndClients()
-  }, [authToken, authData?.employeeId])
+  }, [authToken])
 
   const toggle = () => {
     setAddClientModal(!addClientModal)

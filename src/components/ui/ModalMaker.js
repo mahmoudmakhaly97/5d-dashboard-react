@@ -11,7 +11,14 @@ const ModalMaker = ({
   viewHeader = true,
 }) => {
   return (
-    <Modal isOpen={modal} toggle={toggle} centered size={size} className={className}>
+    <Modal
+      isOpen={modal}
+      toggle={toggle}
+      centered
+      size={size}
+      className={className}
+      style={{ zIndex: 99999999999999999999999999999999999999 }}
+    >
       {viewHeader && (
         <ModalHeader toggle={toggle} className="border-0">
           {' '}

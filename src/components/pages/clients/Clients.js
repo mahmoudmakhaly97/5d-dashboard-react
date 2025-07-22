@@ -11,7 +11,9 @@ const Clients = () => {
       <div className="wrapper d-flex flex-column min-vh-100">
         <AppHeader />
         <Row className="px-5">
-          <ClientsContent />
+          <div>
+            <ClientsContent />
+          </div>
         </Row>
         <AppFooter />
       </div>
