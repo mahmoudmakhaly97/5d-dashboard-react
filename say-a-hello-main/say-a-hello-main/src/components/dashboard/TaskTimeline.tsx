@@ -58,7 +58,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const hourHeight = 120 // Increased row height (was 103)
 
-  const hours = Array.from({ length: 9 }, (_, i) => i + 10) // 10 AM to 6 PM (9 hours)
+  const hours = Array.from({ length: 9 }, (_, i) => i + 10) // 10 AM to 6 PM
   const handleNextWeek = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()

@@ -830,25 +830,36 @@ const TasksContent = () => {
       return true
     }
 
-    // Allow employees to add tasks for themselves
-    if (currentUserId && String(employeeId) === String(currentUserId)) {
-      return true
+    // Check if the current user has subordinates (is a manager)
+    const hasSubordinates = managerTeam.length > 0
+
+    // If user has subordinates, they can add tasks for themselves and their team
+    if (hasSubordinates) {
+      // Allow managers to add tasks for themselves
+      if (currentUserId && String(employeeId) === String(currentUserId)) {
+        return true
+      }
+
+      // Check if employee is in manager's direct team
+      const isDirectTeamMember = managerTeam.some(
+        (teamMember) => String(teamMember.id) === String(employeeId),
+      )
+
+      // Check if employee is a sub-employee of the manager's team
+      const isSubEmployee = employees.some((emp) => {
+        const isManagedByTeamMember = managerTeam.some(
+          (teamMember) => String(teamMember.id) === String(emp.managerId),
+        )
+        return isManagedByTeamMember && String(emp.id) === String(employeeId)
+      })
+
+      return isDirectTeamMember || isSubEmployee
     }
 
-    // Check if employee is in manager's direct team
-    const isDirectTeamMember = managerTeam.some(
-      (teamMember) => String(teamMember.id) === String(employeeId),
-    )
-
-    const isSubEmployee = employees.some((emp) => {
-      const isManagedByTeamMember = managerTeam.some(
-        (teamMember) => String(teamMember.id) === String(emp.managerId),
-      )
-      return isManagedByTeamMember && String(emp.id) === String(employeeId)
-    })
-
-    return isDirectTeamMember || isSubEmployee
+    // If user has no subordinates (regular employee), they cannot add tasks for anyone
+    return false
   }
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (dashboardRef.current) {
@@ -954,7 +965,7 @@ const TasksContent = () => {
               : `Add Task for ${selectedEmployee.name}`}
           </Button>
         ) : (
-          // For non-managers trying to add tasks to unauthorized employees
+          // For users trying to add tasks to unauthorized employees
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
               id="disabledButtonWrapper"
@@ -964,7 +975,9 @@ const TasksContent = () => {
               }}
             >
               <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
-                Add Task for {selectedEmployee?.name}
+                {String(selectedEmployee.id) === String(currentUserId)
+                  ? 'Add Task for Myself'
+                  : `Add Task for ${selectedEmployee?.name}`}
               </Button>
             </span>
             <UncontrolledTooltip
@@ -974,13 +987,14 @@ const TasksContent = () => {
               fade={true}
             >
               {String(selectedEmployee.id) === String(currentUserId)
-                ? "You don't have permission to add tasks"
+                ? managerTeam.length === 0
+                  ? 'Regular employees cannot add tasks for themselves'
+                  : "You don't have permission to add tasks"
                 : 'You can only add tasks for members of your team or their subordinates'}
             </UncontrolledTooltip>
           </div>
         )
       ) : null}
-
       <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
         <Row>
           <Col md={12}>
@@ -1209,7 +1223,6 @@ const TasksContent = () => {
             </div>
           </ModalMaker>
         )}
-
       <ModalMaker modal={deleteModal} toggle={toggleDeleteModal} centered size="md">
         <div className="p-4 text-center">
           <h4>Are you sure you want to delete this task?</h4>
