@@ -9,6 +9,7 @@ import { ModalMaker } from '../../../ui'
 import { format, isSameDay } from 'date-fns'
 import { Tooltip } from 'reactstrap'
 import check from '/assets/images/check.png'
+import warning from '/assets/images/warning.png'
 import pending from '/assets/images/expired.png'
 import './Tasks.scss'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -49,6 +50,13 @@ const TasksContent = () => {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [selectedDepartment, setSelectedDepartment] = useState(null)
 
+  // Tooltip states for past task warnings
+  const [pastTaskTooltip, setPastTaskTooltip] = useState({
+    show: false,
+    message: '',
+    target: null,
+  })
+
   const [selectedEmployee, setSelectedEmployee] = useState(
     location.state?.employeeId
       ? {
@@ -75,9 +83,27 @@ const TasksContent = () => {
     createdAt: new Date().toISOString(),
   })
   const [modalMessage, setModalMessage] = useState(null)
+  const [errorEditModalMessage, setErrorEditModalMessage] = useState(null)
+  const [modalEditVisible, setModalEditVisible] = useState(false)
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
-  const [taskToDelete, setTaskToDelete] = useState(null) // Task to be deleted
+  const [taskToDelete, setTaskToDelete] = useState(null)
+  // Removed deleteWarningVisible and deleteWarningMessage states as we're using tooltips now
+
+  // Function to show tooltip for past task operations
+  const showPastTaskTooltip = (message, targetId) => {
+    setPastTaskTooltip({
+      show: true,
+      message,
+      target: targetId,
+    })
+
+    // Auto-hide tooltip after 3 seconds
+    setTimeout(() => {
+      setPastTaskTooltip((prev) => ({ ...prev, show: false }))
+    }, 3000)
+  }
+
   // In TasksContent.js, add this useEffect at the top of the component
   // Add this useEffect near the top of your TasksContent component
 
@@ -172,7 +198,18 @@ const TasksContent = () => {
 
   // Handle task deletion
   const handleDeleteTask = async (task) => {
-    if (!task.id) return
+    if (!task?.id) return
+    const currentEmployee = selectedEmployee
+
+    // Double-check if task is in past (safety check)
+    if (isTaskInPast(task.date)) {
+      // Show tooltip instead of modal
+      showPastTaskTooltip('Cannot delete tasks from previous days.', 'dashboard-container')
+      setDeleteModal(false) // Close delete modal if it's open
+      setTaskToDelete(null)
+      return
+    }
+
     const taskId = Number(task.id)
 
     try {
@@ -181,7 +218,7 @@ const TasksContent = () => {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-          Authorization: `Bearer   ${authTasks.token}`,
+          Authorization: `Bearer ${authTasks.token}`,
         },
         body: JSON.stringify(taskId),
       })
@@ -194,25 +231,56 @@ const TasksContent = () => {
       setModalMessage(data.message)
       setModalMessageVisible(true)
 
-      // Refresh the dashboard after successful deletion
+      setSelectedEmployee(currentEmployee)
       if (dashboardRef.current) {
-        dashboardRef.current.refresh()
+        dashboardRef.current.setSelectedEmployee(currentEmployee)
       }
 
-      // Alternatively, you can increment the refreshKey to force a complete re-render
-      setRefreshKey((prevKey) => prevKey + 1)
+      // Increment refreshKey to force a complete re-render
+      setRefreshKey((prev) => prev + 1)
+      setModalMessage('Task deleted successfully')
+      setModalMessageVisible(true)
     } catch (error) {
       console.error('Failed to delete task:', error)
       setModalMessage('Failed to delete task. Please try again.')
       setModalMessageVisible(true)
     }
 
-    toggleDeleteModal()
+    // Close delete modal and reset state
+    setDeleteModal(false)
     setTaskToDelete(null)
   }
+
+  // Updated handleTaskDeleted function
+  // Update handleTaskDeleted to be more explicit
   const handleTaskDeleted = (task) => {
+    console.log('Task object received:', task) // Debug log
+
+    if (!task || !task.id) {
+      console.error('Invalid task object received:', task)
+      setErrorEditModalMessage('Invalid task data')
+      setModalEditVisible(true)
+      return
+    }
+
+    // Check if we have a valid date
+    if (!task.date) {
+      console.error('Task missing date:', task)
+      setErrorEditModalMessage('Task data is incomplete')
+      setModalEditVisible(true)
+      return
+    }
+
+    // Check if task is in the past - show tooltip instead of modal
+    if (isTaskInPast(task.date)) {
+      console.log('Attempt to delete past task detected')
+      showPastTaskTooltip('Cannot delete tasks from previous days.', 'dashboard-container')
+      return
+    }
+
+    // If task is not in the past, proceed with delete confirmation
     setTaskToDelete(task)
-    toggleDeleteModal()
+    setDeleteModal(true)
   }
   // Fetch data when component mounts
   useEffect(() => {
@@ -337,38 +405,40 @@ const TasksContent = () => {
       createdAt: new Date().toISOString(),
     })
   }
+  // Replace the validateTaskDateTime function with this updated version:
   const validateTaskDateTime = (selectedDate, startTime, isEdit = false) => {
     const now = new Date()
-    const currentTime = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      now.getHours(),
-      now.getMinutes(),
-    )
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     // Parse the selected date
     const taskDate = new Date(selectedDate)
     const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate())
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    // Check if selected date is before today
+    // Check if selected date is before today (only check day, not time)
     if (taskDay < today) {
       return {
         isValid: false,
-        message: 'Cannot create/edit tasks for past dates',
+        message: `Cannot ${isEdit ? 'edit' : 'create'} tasks for past dates`,
       }
     }
 
-    // If it's today, check the time
-    if (taskDay.getTime() === today.getTime()) {
+    // For creating new tasks, also check time if it's today
+    if (!isEdit && taskDay.getTime() === today.getTime()) {
+      const currentTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+      )
+
       // Parse the start time
       const taskDateTime = parseTimeStringToDateTime(startTime, taskDate)
 
       if (taskDateTime <= currentTime) {
         return {
           isValid: false,
-          message: `Cannot ${isEdit ? 'edit' : 'create'} tasks with start time in the past`,
+          message: 'Cannot create tasks with start time in the past',
         }
       }
     }
@@ -377,6 +447,7 @@ const TasksContent = () => {
       isValid: true,
     }
   }
+
   const parseTimeStringToDateTime = (timeStr, date) => {
     if (!timeStr || !date) return null
 
@@ -395,11 +466,7 @@ const TasksContent = () => {
 
     return taskTime
   }
-  const isTaskInPast = (taskStartTime) => {
-    const now = new Date()
-    const taskTime = new Date(taskStartTime)
-    return taskTime <= now
-  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -559,33 +626,17 @@ const TasksContent = () => {
         return
       }
 
+      // Check if task is in the past using startTime - show tooltip instead of modal
       if (isTaskInPast(taskData.startTime)) {
-        setModalMessage('Cannot edit tasks that have already started or are in the past.')
-        setModalMessageVisible(true)
-        return
+        showPastTaskTooltip('Cannot edit tasks from previous days.', 'dashboard-container')
+        return // Exit early if task is in the past
       }
 
-      // Format times
+      // Format times for the form
       const startTime = taskData.startTime ? format(new Date(taskData.startTime), 'HH:mm') : ''
       const endTime = taskData.endTime ? format(new Date(taskData.endTime), 'HH:mm') : ''
-
-      // **FIX: Ensure clientId is converted to string to match select options**
       const clientId = taskData.clientId ? String(taskData.clientId) : ''
 
-      // **DEBUG: Log the clientId and available clients**
-      console.log('Task clientId:', clientId)
-      console.log(
-        'Available clients:',
-        clients.map((c) => ({ id: c.id, stringId: String(c.id) })),
-      )
-
-      // **FIX: Verify the client exists in the clients array**
-      const clientExists = clients.some((client) => String(client.id) === clientId)
-      if (!clientExists && clientId) {
-        console.warn('Client not found in clients array:', clientId)
-      }
-
-      // Update state
       setTaskToEdit(taskData)
       setFormData({
         title: taskData.title || '',
@@ -598,7 +649,7 @@ const TasksContent = () => {
         departmentId: taskData.departmentId || 0,
         departmentName: taskData.departmentName || '',
         slotCount: taskData.slotCount || 1,
-        clientId: clientId, // **Use the converted string value**
+        clientId: clientId,
         startTime: startTime,
         endTime: endTime,
         createdAt: taskData.createdAt || new Date().toISOString(),
@@ -612,8 +663,30 @@ const TasksContent = () => {
       setEditModal(false)
     }
   }
+
+  // Updated isTaskInPast function to work with ISO strings
+  const isTaskInPast = (isoString) => {
+    if (!isoString) return false
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()) // Today at midnight
+
+    const taskDate = new Date(isoString)
+    if (isNaN(taskDate.getTime())) {
+      console.error('Invalid date string:', isoString)
+      return false
+    }
+
+    const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate())
+
+    console.log('Comparing dates - Today:', today, 'Task date:', taskDay)
+    return taskDay < today
+  }
+  // Updated isTaskInPast function to work with ISO strings
+
   const handleUpdateTask = async (e) => {
     e.preventDefault()
+    const currentEmployee = selectedEmployee
 
     if (!taskToEdit) return
 
@@ -724,9 +797,12 @@ const TasksContent = () => {
       setModalMessageVisible(true)
       setEditModal(false)
       setTaskToEdit(null)
+      setRefreshKey((prev) => prev + 1)
+      resetFormData()
 
+      setSelectedEmployee(currentEmployee)
       if (dashboardRef.current) {
-        dashboardRef.current.refresh()
+        dashboardRef.current.setSelectedEmployee(currentEmployee)
       }
 
       // Reset form
@@ -995,6 +1071,21 @@ const TasksContent = () => {
           </div>
         )
       ) : null}
+
+      {/* Tooltip for past task warnings */}
+      {pastTaskTooltip.show && pastTaskTooltip.target && (
+        <UncontrolledTooltip
+          target={pastTaskTooltip.target}
+          placement="center"
+          delay={{ show: 0, hide: 0 }}
+          fade={true}
+          isOpen={pastTaskTooltip.show}
+          className="custom-tooltip"
+        >
+          <div className="text-warning fw-bold">⚠️ {pastTaskTooltip.message}</div>
+        </UncontrolledTooltip>
+      )}
+
       <ModalMaker modal={modal} toggle={toggle} centered size={'lg'}>
         <Row>
           <Col md={12}>
@@ -1206,6 +1297,17 @@ const TasksContent = () => {
           </div>
         </ModalMaker>
       )}
+      {modalEditVisible && (
+        <UncontrolledTooltip
+          target="disabledButtonWrapper"
+          placement="top"
+          delay={{ show: 0, hide: 0 }}
+          fade={true}
+        >
+          {errorEditModalMessage}
+        </UncontrolledTooltip>
+      )}
+
       {modalMessageVisible &&
         modalMessage === 'Your request is pending and waiting for manager approval.' && (
           <ModalMaker
@@ -1377,7 +1479,7 @@ const TasksContent = () => {
           )}{' '}
         </div>
       </ModalMaker>
-      <div className="dashboard-container">
+      <div id="dashboard-container" className="dashboard-container">
         <Dashboard
           ref={dashboardRef}
           onEditTask={handleEditTask}

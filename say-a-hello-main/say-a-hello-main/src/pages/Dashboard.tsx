@@ -77,6 +77,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const [currentDate, setCurrentDate] = useState(today)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false) // Mobile sidebar state
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([])
 
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
@@ -87,6 +88,13 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     }
   }
 
+  /*************  ✨ Windsurf Command ⭐  *************/
+  /**
+   * Fetches data from server and processes it to create department structure.
+   * Includes fetching departments, tasks and employees.
+   * @returns {Promise<void>}
+   */
+  /*******  253f91a1-f112-4c41-b0b9-33b7bda0ea3a  *******/
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -106,7 +114,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer ${authTasks.token}`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjU3NWI2NGNiLWQwM2QtNDU5MC05MTZjLTQ3MTA2MWJjODYzMCIsImV4cCI6MTc1NDA1NzQ2MSwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.zfUYL_1V4RGiulzXdDVwMrf3QfnVuAo3KGg_cjogPu8`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -184,10 +192,22 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   }
 
   useImperativeHandle(ref, () => ({
-    refresh,
+    refresh: async () => {
+      setIsRefreshing(true)
+      await fetchData() // This should re-fetch all tasks
+      setIsRefreshing(false)
+    },
     getSelectedEmployee: () => selectedEmployee,
     getSelectedDate: () => currentDate,
     setSelectedDate: (date: Date) => setCurrentDate(date),
+    setSelectedEmployee: (emp: Employee) => {
+      if (emp) {
+        const dept = departments.find((d) => d.employees.some((e) => e.id === emp.id))
+        if (dept) {
+          handleEmployeeSelect(dept, emp)
+        }
+      }
+    },
   }))
 
   useEffect(() => {
@@ -233,7 +253,9 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const handleEmployeeSelect = (department: Department, employee: Employee | null) => {
     setSelectedDepartment(department)
     setSelectedEmployee(employee)
-
+    if (!openAccordionItems.includes(department.id)) {
+      setOpenAccordionItems([...openAccordionItems, department.id])
+    }
     // Reset to today's date when selecting an employee
     const today = new Date()
     setCurrentDate(today)
@@ -271,7 +293,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-background">
+    <div className="flex h-[700px] overflow-hidden    w-screen bg-background">
       <div className="flex h-full w-full flex-col">
         {/* Mobile menu button */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b bg-background">
@@ -297,7 +319,12 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         <div className="flex flex-1 h-full overflow-x-hidden relative">
           {/* Desktop sidebar */}
           <div className="hidden lg:block w-[18rem] border-r overflow-auto bg-muted/10 p-4">
-            <Accordion type="multiple" className="w-full">
+            <Accordion
+              type="multiple"
+              className="w-full"
+              value={openAccordionItems}
+              onValueChange={setOpenAccordionItems}
+            >
               {departments.map((department) => (
                 <AccordionItem key={department.id} value={department.id}>
                   <AccordionTrigger

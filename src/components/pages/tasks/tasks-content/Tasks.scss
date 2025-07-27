@@ -173,15 +173,11 @@
     z-index: 9999999999;
   }
 
-  .tasks-container .flex.h-full {
-    height: 1200px;
-
-    overflow: auto;
-  }
   .tasks-container .flex.flex-wrap.mb-4.justify-between.items-start.w-full.px-4.sm\:px-\[20px\] {
     width: calc(100% - 2rem) !important;
   }
 }
+
 @media (max-width: 500px) {
   .flex.flex-wrap.gap-2.ml-4.my-4.justify-between.btn-tasks-container {
     width: 340px;
@@ -192,4 +188,11 @@
 }
 div#radix-\:ri\: {
   z-index: 99999999 !important;
+}
+.custom-tooltip {
+  position: absolute;
+  top: 50%;
+  right: 50%;
+  min-width: 400px;
+  transform: translate(100%, -50%);
 }

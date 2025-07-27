@@ -116,9 +116,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     onAllowCreateTaskChange?.(true)
   }
 
+  const handleEditClick = (task: Task) => {
+    // Prevent default behavior that might close the accordion
+    onEditTask(task)
+  }
+
   const handleDeleteClick = (task: Task) => {
-    setSelectedTaskToDelete(task)
-    setShowDeleteModal(true)
+    // Prevent default behavior that might close the accordion
+    onDeleteTask(task)
   }
 
   const fetchData = async () => {
@@ -135,7 +140,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer ${authTasks.token}`,
+            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjU3NWI2NGNiLWQwM2QtNDU5MC05MTZjLTQ3MTA2MWJjODYzMCIsImV4cCI6MTc1NDA1NzQ2MSwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.zfUYL_1V4RGiulzXdDVwMrf3QfnVuAo3KGg_cjogPu8`,
           },
         },
       )
@@ -450,7 +455,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                   <Pencil
                                     size={19}
                                     className="absolute top-[5rem] right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                    onClick={() => onEditTask(task)}
+                                    onClick={() => handleEditClick(task)}
                                   />
                                 </div>
                               )
@@ -540,7 +545,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
                                   <Pencil
                                     size={19}
                                     className="absolute top-[5rem] right-3 cursor-pointer text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                    onClick={() => onEditTask(task)}
+                                    onClick={() => handleEditClick(task)}
                                   />
                                 </div>
                               )
@@ -567,14 +572,14 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         </div>
       )}
 
-      {selectedTaskToDelete && (
+      {/* {selectedTaskToDelete && (
         <ConfirmDeleteModal
           open={showDeleteModal}
           onConfirm={() => onDeleteTask(selectedTaskToDelete)}
           onCancel={() => setShowDeleteModal(false)}
           taskName={selectedTaskToDelete.title}
         />
-      )}
+      )} */}
     </div>
   )
 }
