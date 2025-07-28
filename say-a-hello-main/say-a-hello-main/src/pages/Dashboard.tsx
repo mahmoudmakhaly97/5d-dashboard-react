@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { forwardRef, useImperativeHandle } from 'react'
-import { Trash2, Menu, X } from 'lucide-react' // Import menu icons
+import { Trash2, Menu, X, ChevronUp, ChevronDown } from 'lucide-react' // Import menu icons
 
 import {
   Accordion,
@@ -78,6 +78,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false) // Mobile sidebar state
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([])
+  const [initialUserLoaded, setInitialUserLoaded] = useState(false)
 
   const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   const authTasks = JSON.parse(localStorage.getItem('authData'))
@@ -114,7 +115,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjU3NWI2NGNiLWQwM2QtNDU5MC05MTZjLTQ3MTA2MWJjODYzMCIsImV4cCI6MTc1NDA1NzQ2MSwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.zfUYL_1V4RGiulzXdDVwMrf3QfnVuAo3KGg_cjogPu8`,
+          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjE3MDFjODVhLWJkZjktNDljOC05OWYxLWM5OWVhMDE5YmM2YiIsImV4cCI6MTc1NDEzNzg0OCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.wc6VE_W4wod8n8W6HdWqw1O6cfvxJ07uVQGBLVCpd_c`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -171,18 +172,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    if (currentUserId && !selectedEmployee && departments.length > 0) {
-      // Find the logged-in user in departments
-      for (const dept of departments) {
-        const foundEmployee = dept.employees.find((emp) => emp.id === currentUserId.toString())
-        if (foundEmployee) {
-          handleEmployeeSelect(dept, foundEmployee)
-          break
-        }
-      }
-    }
-  }, [currentUserId, departments, selectedEmployee])
+
   const toggleDeleteModal = () => setDeleteModal(!deleteModal)
 
   const refresh = async () => {
@@ -253,10 +243,27 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const handleEmployeeSelect = (department: Department, employee: Employee | null) => {
     setSelectedDepartment(department)
     setSelectedEmployee(employee)
-    if (!openAccordionItems.includes(department.id)) {
-      setOpenAccordionItems([...openAccordionItems, department.id])
+
+    // For initial load, keep the accordion open
+    if (!initialUserLoaded && employee?.id === currentUserId?.toString()) {
+      setOpenAccordionItems([department.id])
+      setInitialUserLoaded(true)
+      return
     }
-    // Reset to today's date when selecting an employee
+
+    // Only toggle accordion when clicking department header (employee is null)
+    if (!employee) {
+      setOpenAccordionItems(
+        (prev) =>
+          prev.includes(department.id)
+            ? prev.filter((id) => id !== department.id) // Close
+            : [...prev, department.id], // Open
+      )
+    } else {
+      // When selecting employee, keep the accordion open
+      setOpenAccordionItems([department.id])
+    }
+
     const today = new Date()
     setCurrentDate(today)
 
@@ -265,7 +272,24 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     }
     window.dispatchEvent(new CustomEvent('employeeSelected'))
   }
-
+  const handleEmployeeClick = (department: Department, employee: Employee) => {
+    handleEmployeeSelect(department, employee)
+    // Keep department open
+    setOpenAccordionItems((prev) =>
+      prev.includes(department.id) ? prev : [...prev, department.id],
+    )
+  }
+  useEffect(() => {
+    if (currentUserId && !selectedEmployee && departments.length > 0 && !initialUserLoaded) {
+      for (const dept of departments) {
+        const foundEmployee = dept.employees.find((emp) => emp.id === currentUserId.toString())
+        if (foundEmployee) {
+          handleEmployeeSelect(dept, foundEmployee)
+          break
+        }
+      }
+    }
+  }, [currentUserId, departments, selectedEmployee, initialUserLoaded])
   if (loading) {
     return (
       <div className="flex h-screen w-screen bg-background items-center justify-center">
@@ -291,7 +315,9 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       </div>
     )
   }
-
+  const handleAccordionChange = (value: string[]) => {
+    setOpenAccordionItems(value)
+  }
   return (
     <div className="flex h-[700px] overflow-hidden    w-screen bg-background">
       <div className="flex h-full w-full flex-col">
@@ -323,12 +349,16 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
               type="multiple"
               className="w-full"
               value={openAccordionItems}
-              onValueChange={setOpenAccordionItems}
+              onValueChange={handleAccordionChange}
             >
               {departments.map((department) => (
                 <AccordionItem key={department.id} value={department.id}>
                   <AccordionTrigger
-                    onClick={() => handleEmployeeSelect(department, null)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      // Pass null as employee to indicate we're clicking the department header
+                      handleEmployeeSelect(department, null)
+                    }}
                     className={`px-1 font-medium hover:no-underline py-4 ${
                       selectedDepartment?.id === department.id && !selectedEmployee
                         ? 'bg-accent text-accent-foreground'
@@ -402,7 +432,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
                   </div>
                 </div>
                 <div className="p-4 overflow-auto h-full pb-20">
-                  <Accordion type="multiple" className="w-full">
+                  <Accordion className="w-full">
                     {departments.map((department) => (
                       <AccordionItem key={department.id} value={department.id}>
                         <AccordionTrigger
