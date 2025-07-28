@@ -56,6 +56,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
   const [selectedDayForNewTask, setSelectedDayForNewTask] = useState<Date>(() => new Date())
   const [isViewingCurrentWeek, setIsViewingCurrentWeek] = useState(true)
 
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   const hourHeight = 120 // Increased row height (was 103)
 
   const hours = Array.from({ length: 9 }, (_, i) => i + 10) // 10 AM to 6 PM
@@ -89,6 +90,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       onDateSelect(today)
     }
   }
+
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -140,7 +142,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
           }),
         {
           headers: {
-            Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjU3NWI2NGNiLWQwM2QtNDU5MC05MTZjLTQ3MTA2MWJjODYzMCIsImV4cCI6MTc1NDA1NzQ2MSwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.zfUYL_1V4RGiulzXdDVwMrf3QfnVuAo3KGg_cjogPu8`,
+            Authorization: `Bearer ${authTasks.token}  `,
           },
         },
       )
@@ -199,12 +201,21 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
       tasks =
         department.employees?.flatMap((emp) =>
           (emp.tasks || [])
-            .filter((task) => isSameDay(new Date(task.date), currentDate)) // Fixed: Added closing parenthesis
-            .map((task) => ({ ...task, employeeName: emp.name, employeeAvatar: emp.avatar })),
+            .filter((task) => isSameDay(new Date(task.date), currentDate)) // Closing parenthesis was in wrong place
+            .map((task) => ({
+              ...task,
+              employeeName: emp.name,
+              employeeAvatar: emp.avatar,
+            })),
         ) || []
     }
 
-    if (showOnlyMyTasks || (employee && employee.id === currentUserId?.toString())) {
+    // Apply filtering
+    if (
+      initialLoadComplete ||
+      showOnlyMyTasks ||
+      (employee && employee.id === currentUserId?.toString())
+    ) {
       tasks = tasks.filter(
         (task) => task.assignedToEmployeeId?.toString() === currentUserId?.toString(),
       )
@@ -215,6 +226,11 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   const tasks = getTasks()
 
+  useEffect(() => {
+    if (tasks.length > 0 && !initialLoadComplete) {
+      setInitialLoadComplete(true)
+    }
+  }, [tasks])
   const getEmployeesWithTasksToday = () => {
     if (!department || employee) return []
     return department.employees || []

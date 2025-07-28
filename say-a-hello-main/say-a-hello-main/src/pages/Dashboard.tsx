@@ -115,7 +115,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
       // Fetch tasks
       const tasksResponse = await fetch(`${BASE_URL}/Tasks/GetAllTasks`, {
         headers: {
-          Authorization: `Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM3NSIsInN1YiI6IjM3NSIsImVtYWlsIjoibmloYWwua2FtYWxANWQtYWdlbmN5LmNvbSIsImp0aSI6IjE3MDFjODVhLWJkZjktNDljOC05OWYxLWM5OWVhMDE5YmM2YiIsImV4cCI6MTc1NDEzNzg0OCwiaXNzIjoiQXR0ZW5kYW5jZUFwcCIsImF1ZCI6IkF0dGVuZGFuY2VBcGlVc2VyIn0.wc6VE_W4wod8n8W6HdWqw1O6cfvxJ07uVQGBLVCpd_c`,
+          Authorization: `Bearer  ${authTasks.token}`,
         },
       })
       const tasksData = await tasksResponse.json()
@@ -344,7 +344,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         {/* Main content area */}
         <div className="flex flex-1 h-full overflow-x-hidden relative">
           {/* Desktop sidebar */}
-          <div className="hidden lg:block w-[18rem] border-r overflow-auto bg-muted/10 p-4">
+          <div className="hidden lg:block w-[19rem] border-r overflow-auto bg-muted/10 p-4">
             <Accordion
               type="multiple"
               className="w-full"
