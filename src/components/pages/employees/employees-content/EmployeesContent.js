@@ -34,7 +34,7 @@ import {
 
 import check from '/assets/images/check.png'
 import errorIcon from '/assets/images/error.png'
-import employee from '/assets/images/employee.jpg'
+import employee from '/assets/images/employee.gif'
 import { Loader, Pagination, ModalMaker } from '../../../ui'
 import EmployeeDetails from './../../employee-details/EmployeeDetails'
 import './EmployeesContent.scss'
@@ -480,7 +480,6 @@ const Dashboard = () => {
     <div className="employees">
       <div className="title">
         <h4 className="fw-bold mb-0">Employees</h4>
-        <p>Lorem Ipsum is simply dummy text </p>
       </div>
 
       <Row>
@@ -528,25 +527,27 @@ const Dashboard = () => {
               Add Employee
             </Button>
             <ModalMaker modal={modal} toggle={toggle} centered size={'xl'}>
-              <div className="add-employee pe-5 ">
+              <div className="add-employee px-3 pb-2  pt-0">
                 <Row>
-                  <Col md={6}>
-                    <div className="position-relative">
-                      <div className="position-absolute end-0 p-4">
-                        <Button outline color="light" className="rounded-pill back-btn">
+                  <Col lg={6}>
+                    <div className="position-relative h-100 d-flex flex-column justify-center">
+                      {/* <div className="position-absolute end-0 p-4">
+                        <Button
+                          outline
+                          color="light"
+                          className="rounded-pill back-btn d-flex gap-3"
+                        >
                           Back To Website <MoveRight />
                         </Button>
-                      </div>
+                      </div> */}
 
-                      <img
-                        src={employee}
-                        className="img-fluid rounded-3"
-                        style={{ height: '650px' }}
-                      />
+                      <div style={{ height: '90%' }} className="pe-3 mt-5">
+                        <img src={employee} className="img-fluid rounded-3 h-100 object-cover" />
+                      </div>
                     </div>
                   </Col>
-                  <Col md={1}></Col>
-                  <Col md={5}>
+
+                  <Col lg={6}>
                     <h1 className="my-4">Add Employee</h1>
                     <Form onSubmit={handleSubmit}>
                       <Row>

@@ -29,10 +29,11 @@ const AppHeader = () => {
 
   return (
     <CHeader position="sticky" className="mb-4 p-0    " ref={headerRef}>
-      <CContainer className="border-bottom px-4" fluid>
+      <CContainer className="border-bottom px-4 d-flex justify-content-end" fluid>
         <CHeaderToggler
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
           style={{ marginInlineStart: '-14px' }}
+          className="d-none "
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>

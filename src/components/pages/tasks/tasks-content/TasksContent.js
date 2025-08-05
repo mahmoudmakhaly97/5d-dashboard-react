@@ -88,8 +88,62 @@ const TasksContent = () => {
   const [modalMessageVisible, setModalMessageVisible] = useState(false)
   const dashboardRef = useRef()
   const [taskToDelete, setTaskToDelete] = useState(null)
+  const [currentUserData, setCurrentUserData] = useState(null)
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true)
+  useEffect(() => {
+    console.log('Current User Data:', currentUserData)
+  }, [currentUserData])
   // Removed deleteWarningVisible and deleteWarningMessage states as we're using tooltips now
+  const fetchCurrentUserData = async () => {
+    setIsLoadingUserData(true) // Add this state if not already present
+    try {
+      const authData = JSON.parse(localStorage.getItem('authData'))
+      if (!authData?.token) {
+        console.error('No auth token found')
+        return
+      }
 
+      const token = authData.token
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const payload = JSON.parse(atob(base64))
+      const userId = payload.id
+      console.log('Fetching data for user ID:', userId)
+
+      const response = await fetch(`${BASE_URL}/Employee/GetEmployeeWithId?id=${userId}`, {
+        headers: {
+          Authorization: `Bearer ${authData.token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`API error: ${errorText}`)
+      }
+
+      const employeeData = await response.json()
+      console.log('Received employee data:', employeeData)
+
+      if (!employeeData) {
+        throw new Error('Empty response from API')
+      }
+
+      setCurrentUserData(employeeData)
+    } catch (error) {
+      console.error('Failed to fetch user data:', error)
+      // Set default values on error
+      setCurrentUserData({
+        department: 'Unknown',
+        isManager: false,
+      })
+    } finally {
+      setIsLoadingUserData(false)
+    }
+  }
+  useEffect(() => {
+    fetchCurrentUserData()
+  }, [])
   // Function to show tooltip for past task operations
   const showPastTaskTooltip = (message, targetId) => {
     setPastTaskTooltip({
@@ -900,22 +954,41 @@ const TasksContent = () => {
   useEffect(() => {
     setShowOnlyMyTasks(location.pathname === '/my-tasks')
   }, [location])
+  // 1. First, fix the isEmployeeInManagerTeam function
   const isEmployeeInManagerTeam = (employeeId) => {
-    // If user is Account Manager, they can add tasks for anyone
-    if (authTasks?.role === 'Account Manager') {
+    if (isLoadingUserData) {
+      console.log('User data still loading - denying temporarily')
+      return false
+    }
+
+    if (!currentUserData) {
+      console.error('Failed to load user data - check API connection')
+      return false
+    }
+
+    // Account Manager and HR check (case insensitive)
+    const userDepartment = currentUserData.department?.toLowerCase()
+    if (userDepartment === 'account manager' || userDepartment === 'hr') {
+      console.log('Account Manager/HR detected - allowing action for anyone')
       return true
     }
 
-    // Check if the current user has subordinates (is a manager)
-    const hasSubordinates = managerTeam.length > 0
-
-    // If user has subordinates, they can add tasks for themselves and their team
-    if (hasSubordinates) {
-      // Allow managers to add tasks for themselves
-      if (currentUserId && String(employeeId) === String(currentUserId)) {
+    // Check if current user is trying to add task for themselves
+    if (currentUserId && String(employeeId) === String(currentUserId)) {
+      // If user has subordinates (is a manager), they can add tasks for themselves
+      if (managerTeam.length > 0) {
+        console.log('Manager adding task for themselves - allowed')
         return true
       }
+      // Regular employees without subordinates cannot add tasks even for themselves
+      console.log('Regular employee without subordinates - cannot add tasks')
+      return false
+    }
 
+    // For other employees, check if they are in the manager's team
+    const hasSubordinates = managerTeam.length > 0
+
+    if (hasSubordinates) {
       // Check if employee is in manager's direct team
       const isDirectTeamMember = managerTeam.some(
         (teamMember) => String(teamMember.id) === String(employeeId),
@@ -929,10 +1002,34 @@ const TasksContent = () => {
         return isManagedByTeamMember && String(emp.id) === String(employeeId)
       })
 
-      return isDirectTeamMember || isSubEmployee
+      const canManage = isDirectTeamMember || isSubEmployee
+      console.log(`Manager can manage employee ${employeeId}:`, canManage)
+      return canManage
     }
 
-    // If user has no subordinates (regular employee), they cannot add tasks for anyone
+    // If user has no subordinates, they cannot add tasks for others
+    console.log('User has no subordinates - cannot add tasks for others')
+    return false
+  }
+  // 2. Add a helper function to check if user can add tasks at all
+  const canUserAddTasks = () => {
+    if (isLoadingUserData || !currentUserData) {
+      return false
+    }
+
+    const userDepartment = currentUserData.department?.toLowerCase()
+
+    // Account Managers and HR can always add tasks
+    if (userDepartment === 'account manager' || userDepartment === 'hr') {
+      return true
+    }
+
+    // Users with subordinates can add tasks
+    if (managerTeam.length > 0) {
+      return true
+    }
+
+    // Regular employees cannot add tasks
     return false
   }
 
@@ -1028,20 +1125,43 @@ const TasksContent = () => {
   return (
     <div className="tasks-container  ">
       {selectedEmployee?.id && selectedEmployee?.name ? (
-        // Account Managers can always add tasks
-        authTasks?.role === 'Account Manager' ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            Add Task for {selectedEmployee.name}
-          </Button>
-        ) : // For non-managers, check if they're trying to add task to themselves or their team
-        isEmployeeInManagerTeam(selectedEmployee.id) ? (
-          <Button color="primary" onClick={toggle} className="add-task">
-            {String(selectedEmployee.id) === String(currentUserId)
-              ? 'Add Task for Myself'
-              : `Add Task for ${selectedEmployee.name}`}
-          </Button>
+        // First check if user can add tasks at all
+        canUserAddTasks() ? (
+          // Then check specific permissions for this employee
+          isEmployeeInManagerTeam(selectedEmployee.id) ? (
+            <Button color="primary" onClick={toggle} className="add-task">
+              {String(selectedEmployee.id) === String(currentUserId)
+                ? 'Add Task for Myself'
+                : `Add Task for ${selectedEmployee.name}`}
+            </Button>
+          ) : (
+            // User can add tasks but not for this specific employee
+            <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
+              <span
+                id="disabledButtonWrapper"
+                style={{
+                  display: 'inline-block',
+                  cursor: 'not-allowed',
+                }}
+              >
+                <Button color="primary" disabled style={{ pointerEvents: 'none', opacity: 0.5 }}>
+                  {String(selectedEmployee.id) === String(currentUserId)
+                    ? 'Add Task for Myself'
+                    : `Add Task for ${selectedEmployee?.name}`}
+                </Button>
+              </span>
+              <UncontrolledTooltip
+                target="disabledButtonWrapper"
+                placement="top"
+                delay={{ show: 0, hide: 0 }}
+                fade={true}
+              >
+                You can only add tasks for members of your team or their subordinates
+              </UncontrolledTooltip>
+            </div>
+          )
         ) : (
-          // For users trying to add tasks to unauthorized employees
+          // User cannot add tasks at all
           <div className="d-flex justify-content-end align-items-center mb-4 pe-5">
             <span
               id="disabledButtonWrapper"
@@ -1062,11 +1182,9 @@ const TasksContent = () => {
               delay={{ show: 0, hide: 0 }}
               fade={true}
             >
-              {String(selectedEmployee.id) === String(currentUserId)
-                ? managerTeam.length === 0
-                  ? 'Regular employees cannot add tasks for themselves'
-                  : "You don't have permission to add tasks"
-                : 'You can only add tasks for members of your team or their subordinates'}
+              {managerTeam.length === 0
+                ? 'Regular employees cannot add tasks. Only managers, Account Managers, and HR can add tasks.'
+                : 'You do not have permission to add tasks for this employee.'}
             </UncontrolledTooltip>
           </div>
         )
