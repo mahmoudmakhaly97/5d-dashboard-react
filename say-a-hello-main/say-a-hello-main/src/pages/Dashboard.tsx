@@ -55,6 +55,7 @@ interface DashboardProps {
   currentUserId?: string
   managerTeam?: any[]
   handleViewDetails?: (task: Task) => void
+  refreshKey?: number
 }
 
 const Dashboard = forwardRef((props: DashboardProps, ref) => {
@@ -65,6 +66,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     currentUserId,
     managerTeam,
     handleViewDetails,
+    refreshKey,
   } = props
   const today = new Date()
   const [departments, setDepartments] = useState<Department[]>([])
@@ -180,15 +182,15 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     await fetchData()
     setIsRefreshing(false)
   }
-
   useImperativeHandle(ref, () => ({
     refresh: async () => {
       setIsRefreshing(true)
-      await fetchData() // This should re-fetch all tasks
+      await fetchData()
       setIsRefreshing(false)
     },
     getSelectedEmployee: () => selectedEmployee,
     getSelectedDate: () => currentDate,
+    getSelectedDepartment: () => selectedDepartment,
     setSelectedDate: (date: Date) => setCurrentDate(date),
     setSelectedEmployee: (emp: Employee) => {
       if (emp) {
@@ -198,11 +200,16 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
         }
       }
     },
+    setSelectedDepartment: (dept: Department) => {
+      if (dept) {
+        setSelectedDepartment(dept)
+      }
+    },
   }))
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [props.refreshKey])
 
   // Close mobile sidebar when clicking outside
   useEffect(() => {
@@ -239,7 +246,10 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
     const colors: ('red' | 'green' | 'blue')[] = ['red', 'green', 'blue']
     return colors[Math.floor(Math.random() * colors.length)]
   }
-
+  // Then in the useEffect that fetches data:
+  useEffect(() => {
+    fetchData()
+  }, [props.refreshKey]) // Add refreshKey as dependency
   const handleEmployeeSelect = (department: Department, employee: Employee | null) => {
     setSelectedDepartment(department)
     setSelectedEmployee(employee)
@@ -318,6 +328,7 @@ const Dashboard = forwardRef((props: DashboardProps, ref) => {
   const handleAccordionChange = (value: string[]) => {
     setOpenAccordionItems(value)
   }
+
   return (
     <div className="flex h-[700px] overflow-hidden    w-screen bg-background">
       <div className="flex h-full w-full flex-col">

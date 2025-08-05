@@ -27,6 +27,12 @@ export const useNavItems = () => {
       to: '/clients',
       icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
     },
+    {
+      component: CNavItem,
+      name: 'Requests',
+      to: '/requests',
+      icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
+    },
   ]
 
   const hrNav = [
