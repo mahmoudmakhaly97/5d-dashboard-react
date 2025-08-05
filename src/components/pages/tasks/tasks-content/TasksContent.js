@@ -251,15 +251,17 @@ const TasksContent = () => {
   }
 
   // Handle task deletion
+  // Key changes to fix the employee selection persistence after CRUD operations:
+
   const handleDeleteTask = async (task) => {
     if (!task?.id) return
-    const currentEmployee = selectedEmployee
+    const currentEmployee = selectedEmployee // Store current employee
+    const currentDepartment = selectedDepartment // Store current department
 
     // Double-check if task is in past (safety check)
     if (isTaskInPast(task.date)) {
-      // Show tooltip instead of modal
       showPastTaskTooltip('Cannot delete tasks from previous days.', 'dashboard-container')
-      setDeleteModal(false) // Close delete modal if it's open
+      setDeleteModal(false)
       setTaskToDelete(null)
       return
     }
@@ -285,15 +287,20 @@ const TasksContent = () => {
       setModalMessage(data.message)
       setModalMessageVisible(true)
 
+      // IMPORTANT: Restore the employee and department selection
       setSelectedEmployee(currentEmployee)
+      setSelectedDepartment(currentDepartment)
+
+      // Force dashboard to maintain selection
       if (dashboardRef.current) {
-        dashboardRef.current.setSelectedEmployee(currentEmployee)
+        setTimeout(() => {
+          dashboardRef.current.setSelectedEmployee(currentEmployee)
+          dashboardRef.current.setSelectedDepartment(currentDepartment)
+        }, 100)
       }
 
       // Increment refreshKey to force a complete re-render
       setRefreshKey((prev) => prev + 1)
-      setModalMessage('Task deleted successfully')
-      setModalMessageVisible(true)
     } catch (error) {
       console.error('Failed to delete task:', error)
       setModalMessage('Failed to delete task. Please try again.')
@@ -526,6 +533,8 @@ const TasksContent = () => {
 
     try {
       const selectedDate = dashboardRef.current?.getSelectedDate?.() || new Date()
+      const currentEmployee = selectedEmployee // Store current employee
+      const currentDepartment = selectedDepartment // Store current department      const validation = validateTaskDateTime(selectedDate, formData.startTime, false)
       const validation = validateTaskDateTime(selectedDate, formData.startTime, false)
       if (!validation.isValid) {
         setTooltipMessage(validation.message)
@@ -623,16 +632,22 @@ const TasksContent = () => {
       if (isAfter6PM) {
         setModalMessage('Your request is pending and waiting for manager approval.')
       } else {
-        console.log('✅ Task created and approved')
         setModalMessage('Task created successfully.')
       }
 
       setModalMessageVisible(true)
       toggle()
       setTaskCreated(true)
+      // IMPORTANT: Restore the employee and department selection
+      setSelectedEmployee(currentEmployee)
+      setSelectedDepartment(currentDepartment)
 
+      // Force dashboard to maintain selection
       if (dashboardRef.current) {
-        dashboardRef.current.refresh()
+        setTimeout(() => {
+          dashboardRef.current.setSelectedEmployee(currentEmployee)
+          dashboardRef.current.setSelectedDepartment(currentDepartment)
+        }, 100)
       }
 
       resetFormData()
@@ -740,7 +755,8 @@ const TasksContent = () => {
 
   const handleUpdateTask = async (e) => {
     e.preventDefault()
-    const currentEmployee = selectedEmployee
+    const currentEmployee = selectedEmployee // Store current employee
+    const currentDepartment = selectedDepartment // Store current department
 
     if (!taskToEdit) return
 
@@ -851,31 +867,18 @@ const TasksContent = () => {
       setModalMessageVisible(true)
       setEditModal(false)
       setTaskToEdit(null)
-      setRefreshKey((prev) => prev + 1)
-      resetFormData()
-
       setSelectedEmployee(currentEmployee)
+      setSelectedDepartment(currentDepartment)
+
       if (dashboardRef.current) {
-        dashboardRef.current.setSelectedEmployee(currentEmployee)
+        setTimeout(() => {
+          dashboardRef.current.setSelectedEmployee(currentEmployee)
+          dashboardRef.current.setSelectedDepartment(currentDepartment)
+        }, 100)
       }
 
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        assignedToEmployeeId: 0,
-        assignedToEmployeeName: '',
-        createdByEmployeeId: 0,
-        createdByEmployeeName: '',
-        updatedByEmployeeId: 0,
-        departmentId: 0,
-        departmentName: '',
-        slotCount: 1,
-        clientId: '',
-        startTime: '',
-        endTime: '',
-        createdAt: new Date().toISOString(),
-      })
+      setRefreshKey((prev) => prev + 1)
+      resetFormData()
     } catch (error) {
       console.error('Error updating task:', error)
       setTooltipMessage('Oops! Something went wrong while updating the task. Please try again.')
@@ -1121,6 +1124,16 @@ const TasksContent = () => {
       return 'Invalid time'
     }
   }
+  // useEffect(() => {
+  //   if (selectedEmployee && departments.length > 0) {
+  //     const dept = departments.find((d) =>
+  //       d.employees.some((emp) => emp.id === selectedEmployee.id),
+  //     )
+  //     if (dept) {
+  //       setSelectedDepartment(dept)
+  //     }
+  //   }
+  // }, [selectedEmployee, departments])
 
   return (
     <div className="tasks-container  ">
@@ -1607,6 +1620,7 @@ const TasksContent = () => {
           showOnlyMyTasks={showOnlyMyTasks}
           currentUserId={currentUserId}
           handleViewDetails={handleViewDetails}
+          refreshKey={refreshKey} // Pass as prop
         />
       </div>
     </div>

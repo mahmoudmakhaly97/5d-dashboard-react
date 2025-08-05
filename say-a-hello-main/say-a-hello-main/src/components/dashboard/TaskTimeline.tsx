@@ -165,7 +165,7 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [employee, currentDate, currentWeekOffset])
 
   const isBefore10AM = (task: Task) => {
     const taskDate = new Date(task.date)
@@ -196,12 +196,20 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
     let tasks = []
 
     if (employee) {
-      tasks = employee.tasks || []
+      // For weekly view, include all tasks in the week range
+      const weekStart = startOfWeek(addWeeks(currentDate, currentWeekOffset))
+      const weekEnd = endOfWeek(addWeeks(currentDate, currentWeekOffset))
+
+      tasks = (employee.tasks || []).filter((task) => {
+        const taskDate = new Date(task.date)
+        return taskDate >= weekStart && taskDate <= weekEnd
+      })
     } else {
+      // Daily view logic remains the same
       tasks =
         department.employees?.flatMap((emp) =>
           (emp.tasks || [])
-            .filter((task) => isSameDay(new Date(task.date), currentDate)) // Closing parenthesis was in wrong place
+            .filter((task) => isSameDay(new Date(task.date), currentDate))
             .map((task) => ({
               ...task,
               employeeName: emp.name,
@@ -210,12 +218,8 @@ const TaskTimeline: React.FC<TaskTimelineProps> = ({
         ) || []
     }
 
-    // Apply filtering
-    if (
-      initialLoadComplete ||
-      showOnlyMyTasks ||
-      (employee && employee.id === currentUserId?.toString())
-    ) {
+    // Apply additional filtering if needed
+    if (showOnlyMyTasks || (employee && employee.id === currentUserId?.toString())) {
       tasks = tasks.filter(
         (task) => task.assignedToEmployeeId?.toString() === currentUserId?.toString(),
       )
