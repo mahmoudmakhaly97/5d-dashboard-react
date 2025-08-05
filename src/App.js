@@ -11,6 +11,7 @@ import StarterPage from './components/pages/starter-page/StarterPage'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ProtectedRoutes from './ProtectedRouts'
+import Requests from './components/pages/requests/Requests'
 
 const App = () => {
   return (
@@ -63,6 +64,14 @@ const App = () => {
             element={
               <ProtectedRoutes>
                 <Clients />
+              </ProtectedRoutes>
+            }
+          />
+          <Route
+            path="/requests"
+            element={
+              <ProtectedRoutes>
+                <Requests />
               </ProtectedRoutes>
             }
           />
