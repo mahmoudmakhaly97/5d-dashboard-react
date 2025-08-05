@@ -2,7 +2,7 @@
 import React from 'react'
 
 import { Row } from 'reactstrap'
-import { AppFooter, AppHeader, AppSidebar } from '../../ui'
+import { AppFooter, AppHeader, AppSidebar } from './sidebar'
 import TasksContent from './tasks-content/TasksContent'
 const Tasks = () => {
   return (

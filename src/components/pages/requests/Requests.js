@@ -1,6 +1,6 @@
 import { Row } from 'reactstrap'
 import RequestsContent from './requests-content/RequestsContent'
-import { AppFooter, AppHeader, AppSidebar } from '../../ui'
+import { AppFooter, AppHeader, AppSidebar } from './sidebar'
 const Requests = () => {
   return (
     <div>
